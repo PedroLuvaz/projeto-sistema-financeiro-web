@@ -1,0 +1,927 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API - Sistema Financeiro",
+    "version": "2.0.0",
+    "description": "API completa do sistema de gestão financeira. Autenticação JWT, parcelamento automático, dashboard mensal, relatórios anuais, faturas por cartão e exportação CSV."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001/api",
+      "description": "Servidor de desenvolvimento"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Verifica status da API e conexão com banco de dados",
+        "responses": {
+          "200": {
+            "description": "API operacional",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Health" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/usuarios/registrar": {
+      "post": {
+        "tags": ["Autenticação"],
+        "summary": "Registra um novo usuário",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UsuarioRegistro" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuário registrado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "usuario": { "$ref": "#/components/schemas/Usuario" },
+                        "token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIs..." }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": { "description": "Email já cadastrado" }
+        }
+      }
+    },
+    "/usuarios/login": {
+      "post": {
+        "tags": ["Autenticação"],
+        "summary": "Login e obtenção de token JWT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Login" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login realizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "usuario": { "$ref": "#/components/schemas/Usuario" },
+                        "token": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Email ou senha inválidos" }
+        }
+      }
+    },
+    "/usuarios": {
+      "get": {
+        "tags": ["Usuários"],
+        "summary": "Lista todos os usuários",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista de usuários",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/Usuario" } } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuarios/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "get": {
+        "tags": ["Usuários"],
+        "summary": "Busca usuário por ID",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Usuário encontrado" },
+          "404": { "description": "Não encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["Usuários"],
+        "summary": "Atualiza usuário",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UsuarioUpdate" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Atualizado" } }
+      },
+      "delete": {
+        "tags": ["Usuários"],
+        "summary": "Remove usuário",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Removido" } }
+      }
+    },
+
+    "/membros-familia": {
+      "post": {
+        "tags": ["Membros da Família"],
+        "summary": "Cria um membro da família",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MembroFamiliaCreate" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Membro criado" } }
+      }
+    },
+    "/membros-familia/usuario/{idUsuario}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Membros da Família"],
+        "summary": "Lista membros da família do usuário",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista de membros",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/MembroFamilia" } } } } } }
+          }
+        }
+      }
+    },
+    "/membros-familia/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "get": { "tags": ["Membros da Família"], "summary": "Busca membro por ID", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "put": {
+        "tags": ["Membros da Família"], "summary": "Atualiza membro", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MembroFamiliaUpdate" } } } },
+        "responses": { "200": { "description": "Atualizado" } }
+      },
+      "delete": { "tags": ["Membros da Família"], "summary": "Remove membro", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Removido" } } }
+    },
+
+    "/contas-cartoes": {
+      "post": {
+        "tags": ["Contas e Cartões"],
+        "summary": "Cria uma conta/cartão",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ContaCartaoCreate" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Conta criada" } }
+      }
+    },
+    "/contas-cartoes/usuario/{idUsuario}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Contas e Cartões"],
+        "summary": "Lista contas/cartões do usuário",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "tipo", "in": "query", "schema": { "type": "string", "enum": ["Corrente", "Crédito", "Dinheiro"] }, "description": "Filtrar por tipo" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de contas",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/ContaCartao" } } } } } }
+          }
+        }
+      }
+    },
+    "/contas-cartoes/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "get": { "tags": ["Contas e Cartões"], "summary": "Busca conta por ID", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "put": {
+        "tags": ["Contas e Cartões"], "summary": "Atualiza conta", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContaCartaoUpdate" } } } },
+        "responses": { "200": { "description": "Atualizado" } }
+      },
+      "delete": { "tags": ["Contas e Cartões"], "summary": "Remove conta", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Removido" } } }
+    },
+
+    "/rendas": {
+      "post": {
+        "tags": ["Rendas"],
+        "summary": "Cria uma renda",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RendaCreate" } } }
+        },
+        "responses": { "201": { "description": "Renda criada" } }
+      }
+    },
+    "/rendas/usuario/{idUsuario}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Rendas"],
+        "summary": "Lista rendas do usuário (filtra por mês/ano)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 12 }, "description": "Mês (1-12)" },
+          { "name": "ano", "in": "query", "schema": { "type": "integer" }, "description": "Ano (ex: 2026)" },
+          { "name": "dataInicio", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "dataFim", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": { "200": { "description": "Lista de rendas" } }
+      }
+    },
+    "/rendas/usuario/{idUsuario}/total": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Rendas"],
+        "summary": "Calcula total de rendas (por mês/ano ou período)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "schema": { "type": "integer" } },
+          { "name": "ano", "in": "query", "schema": { "type": "integer" } },
+          { "name": "dataInicio", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "dataFim", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": { "200": { "description": "Total calculado", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "data": { "type": "object", "properties": { "total": { "type": "number" } } } } } } } } }
+      }
+    },
+    "/rendas/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "get": { "tags": ["Rendas"], "summary": "Busca renda por ID", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "put": {
+        "tags": ["Rendas"], "summary": "Atualiza renda", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RendaUpdate" } } } },
+        "responses": { "200": { "description": "Atualizado" } }
+      },
+      "delete": { "tags": ["Rendas"], "summary": "Remove renda", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Removido" } } }
+    },
+
+    "/despesas": {
+      "post": {
+        "tags": ["Despesas"],
+        "summary": "Cria despesa (com parcelamento automático se Numero_Parcelas > 1)",
+        "description": "Se Numero_Parcelas > 1, o sistema cria automaticamente um ParcelamentoAgrupador e gera N registros de despesa, um por mês. Valor_Parcela = Valor_Total / Numero_Parcelas",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DespesaCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Despesa(s) criada(s). Se parcelado, retorna parcelamento + array de despesas."
+          }
+        }
+      }
+    },
+    "/despesas/usuario/{idUsuario}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Despesas"],
+        "summary": "Lista despesas do usuário (filtra por mês/ano, categoria, conta)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 12 }, "description": "Mês (1-12)" },
+          { "name": "ano", "in": "query", "schema": { "type": "integer" }, "description": "Ano" },
+          { "name": "dataInicio", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "dataFim", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "categoria", "in": "query", "schema": { "type": "string" } },
+          { "name": "idConta", "in": "query", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": { "200": { "description": "Lista de despesas com includes (conta, parcelamento)" } }
+      }
+    },
+    "/despesas/usuario/{idUsuario}/total": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Despesas"],
+        "summary": "Total de despesas no período",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "schema": { "type": "integer" } },
+          { "name": "ano", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Total calculado" } }
+      }
+    },
+    "/despesas/usuario/{idUsuario}/categorias": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Despesas"],
+        "summary": "Despesas agrupadas por categoria (para gráfico de pizza)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "schema": { "type": "integer" } },
+          { "name": "ano", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Array de { categoria, total }" }
+        }
+      }
+    },
+    "/despesas/usuario/{idUsuario}/top": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Despesas"],
+        "summary": "Top N maiores despesas do mês (ranking)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "ano", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "limite", "in": "query", "schema": { "type": "integer", "default": 5 }, "description": "Quantidade (padrão: 5)" }
+        ],
+        "responses": { "200": { "description": "Lista das maiores despesas" } }
+      }
+    },
+    "/despesas/usuario/{idUsuario}/exportar-csv": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Despesas"],
+        "summary": "Exporta despesas como CSV",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "schema": { "type": "integer" } },
+          { "name": "ano", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo CSV para download",
+            "content": { "text/csv": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/despesas/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "get": { "tags": ["Despesas"], "summary": "Busca despesa por ID", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "put": {
+        "tags": ["Despesas"], "summary": "Atualiza despesa", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DespesaUpdate" } } } },
+        "responses": { "200": { "description": "Atualizado" } }
+      },
+      "delete": {
+        "tags": ["Despesas"],
+        "summary": "Remove despesa (ou parcelamento inteiro com ?parcelamento=true)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "parcelamento", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] }, "description": "Se true, deleta o parcelamento inteiro e todas as parcelas" }
+        ],
+        "responses": { "200": { "description": "Removido" } }
+      }
+    },
+
+    "/parcelamentos": {
+      "post": {
+        "tags": ["Parcelamentos"],
+        "summary": "Cria parcelamento agrupador (criado automaticamente ao criar despesa parcelada)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ParcelamentoCreate" } } } },
+        "responses": { "201": { "description": "Criado" } }
+      }
+    },
+    "/parcelamentos/usuario/{idUsuario}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Parcelamentos"],
+        "summary": "Lista parcelamentos do usuário (com parcelas pagas/restantes)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Lista com parcelas_pagas, parcelas_restantes, valor_restante" } }
+      }
+    },
+    "/parcelamentos/usuario/{idUsuario}/dividas-futuras": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Parcelamentos"],
+        "summary": "Total de dívidas futuras (parcelas com data > hoje)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Total consolidado",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" }, "data": { "type": "object", "properties": { "total_dividas_futuras": { "type": "number", "example": 4800.00 } } } } } } }
+          }
+        }
+      }
+    },
+    "/parcelamentos/usuario/{idUsuario}/cronograma": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Parcelamentos"],
+        "summary": "Cronograma de pagamentos futuros (total por mês)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Array de { mes, total, parcelas[] }",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mes": { "type": "string", "example": "2026-03" },
+                          "total": { "type": "number", "example": 400.00 },
+                          "parcelas": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "descricao": { "type": "string" },
+                                "valor": { "type": "number" },
+                                "parcela": { "type": "string" },
+                                "data": { "type": "string", "format": "date" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parcelamentos/usuario/{idUsuario}/faturas": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Parcelamentos"],
+        "summary": "Visão de fatura por cartão/conta em um mês",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 12 } },
+          { "name": "ano", "in": "query", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Faturas por conta/cartão",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "conta": { "$ref": "#/components/schemas/ContaCartao" },
+                          "total_fatura": { "type": "number" },
+                          "quantidade_itens": { "type": "integer" },
+                          "despesas": { "type": "array", "items": { "type": "object" } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parcelamentos/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "get": { "tags": ["Parcelamentos"], "summary": "Busca parcelamento por ID (com despesas)", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "put": {
+        "tags": ["Parcelamentos"], "summary": "Atualiza parcelamento", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ParcelamentoUpdate" } } } },
+        "responses": { "200": { "description": "Atualizado" } }
+      },
+      "delete": { "tags": ["Parcelamentos"], "summary": "Remove parcelamento e todas as parcelas (CASCADE)", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Removido" } } }
+    },
+
+    "/reservas": {
+      "post": {
+        "tags": ["Reservas"],
+        "summary": "Cria uma reserva/objetivo",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReservaCreate" } } } },
+        "responses": { "201": { "description": "Reserva criada" } }
+      }
+    },
+    "/reservas/usuario/{idUsuario}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Reservas"],
+        "summary": "Lista reservas do usuário (com % de progresso)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Lista com progresso calculado" } }
+      }
+    },
+    "/reservas/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "get": { "tags": ["Reservas"], "summary": "Busca reserva por ID", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "put": {
+        "tags": ["Reservas"], "summary": "Atualiza reserva", "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReservaUpdate" } } } },
+        "responses": { "200": { "description": "Atualizado" } }
+      },
+      "delete": { "tags": ["Reservas"], "summary": "Remove reserva", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "Removido" } } }
+    },
+    "/reservas/{id}/adicionar": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "put": {
+        "tags": ["Reservas"],
+        "summary": "Adiciona valor (aporte) à reserva",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["valor"], "properties": { "valor": { "type": "number", "minimum": 0.01, "example": 500.00 } } } } }
+        },
+        "responses": { "200": { "description": "Valor adicionado" } }
+      }
+    },
+    "/reservas/{id}/retirar": {
+      "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+      "put": {
+        "tags": ["Reservas"],
+        "summary": "Retira valor da reserva",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["valor"], "properties": { "valor": { "type": "number", "minimum": 0.01, "example": 200.00 } } } } }
+        },
+        "responses": { "200": { "description": "Valor retirado" } }
+      }
+    },
+
+    "/dashboard/usuario/{idUsuario}/resumo-mensal": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Resumo mensal completo (rendas, despesas, saldo, categorias, top 5)",
+        "description": "Retorna todos os dados necessários para o dashboard mensal: total de rendas, total de despesas, saldo líquido, despesas por categoria (gráfico pizza), top 5 maiores despesas.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "mes", "in": "query", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 12 }, "description": "Mês (1-12)" },
+          { "name": "ano", "in": "query", "required": true, "schema": { "type": "integer" }, "description": "Ano (ex: 2026)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumo mensal completo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "mes": { "type": "integer", "example": 2 },
+                        "ano": { "type": "integer", "example": 2026 },
+                        "total_rendas": { "type": "number", "example": 6500.00 },
+                        "total_despesas": { "type": "number", "example": 2895.90 },
+                        "saldo_liquido": { "type": "number", "example": 3604.10 },
+                        "despesas_por_categoria": {
+                          "type": "array",
+                          "items": { "type": "object", "properties": { "categoria": { "type": "string" }, "total": { "type": "number" } } }
+                        },
+                        "top_5_despesas": { "type": "array", "items": { "$ref": "#/components/schemas/Despesa" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/usuario/{idUsuario}/relatorio-anual": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Relatório anual completo (evolução mensal, rendas, despesas por conta/categoria)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "ano", "in": "query", "required": true, "schema": { "type": "integer" }, "description": "Ano (ex: 2026)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Relatório anual com resumo consolidado, evolução mês a mês, rendas do ano, despesas agrupadas por conta e por categoria"
+          }
+        }
+      }
+    },
+    "/dashboard/usuario/{idUsuario}/relatorio-anual/csv": {
+      "parameters": [{ "$ref": "#/components/parameters/IdUsuarioPath" }],
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Exporta relatório anual como CSV",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "ano", "in": "query", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Arquivo CSV para download", "content": { "text/csv": { "schema": { "type": "string" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token JWT obtido via POST /api/usuarios/login"
+      }
+    },
+    "parameters": {
+      "IdPath": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "ID do recurso (UUID)"
+      },
+      "IdUsuarioPath": {
+        "name": "idUsuario",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "ID do usuário (UUID)"
+      }
+    },
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "API funcionando!" },
+          "database": { "type": "string", "example": "conectado" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Usuario": {
+        "type": "object",
+        "properties": {
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Nome": { "type": "string", "example": "João Silva" },
+          "Email": { "type": "string", "format": "email", "example": "joao@email.com" },
+          "Data_Criacao": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UsuarioRegistro": {
+        "type": "object",
+        "required": ["Nome", "Email", "Senha"],
+        "properties": {
+          "Nome": { "type": "string", "maxLength": 100, "example": "Pedro Andrade" },
+          "Email": { "type": "string", "format": "email", "example": "pedro@email.com" },
+          "Senha": { "type": "string", "minLength": 6, "example": "senha123" }
+        }
+      },
+      "Login": {
+        "type": "object",
+        "required": ["Email", "Senha"],
+        "properties": {
+          "Email": { "type": "string", "format": "email", "example": "joao.silva@email.com" },
+          "Senha": { "type": "string", "example": "senha123" }
+        }
+      },
+      "UsuarioUpdate": {
+        "type": "object",
+        "properties": {
+          "Nome": { "type": "string" },
+          "Email": { "type": "string", "format": "email" },
+          "Senha": { "type": "string", "minLength": 6 }
+        }
+      },
+      "MembroFamilia": {
+        "type": "object",
+        "properties": {
+          "Id_Membro": { "type": "string", "format": "uuid" },
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Nome_Membro": { "type": "string" },
+          "Parentesco": { "type": "string" }
+        }
+      },
+      "MembroFamiliaCreate": {
+        "type": "object",
+        "required": ["Id_Usuario", "Nome_Membro"],
+        "properties": {
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Nome_Membro": { "type": "string", "maxLength": 100, "example": "Maria Silva" },
+          "Parentesco": { "type": "string", "maxLength": 50, "example": "Esposa" }
+        }
+      },
+      "MembroFamiliaUpdate": {
+        "type": "object",
+        "properties": {
+          "Nome_Membro": { "type": "string" },
+          "Parentesco": { "type": "string" }
+        }
+      },
+      "ContaCartao": {
+        "type": "object",
+        "properties": {
+          "Id_Conta": { "type": "string", "format": "uuid" },
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Nome_Conta": { "type": "string", "example": "Nubank" },
+          "Tipo": { "type": "string", "enum": ["Corrente", "Crédito", "Dinheiro"] },
+          "Titular": { "type": "string", "example": "João Silva" },
+          "Ultimos_Digitos": { "type": "string", "example": "1234" },
+          "Cor_Hex": { "type": "string", "example": "#820AD1" }
+        }
+      },
+      "ContaCartaoCreate": {
+        "type": "object",
+        "required": ["Id_Usuario", "Nome_Conta", "Tipo", "Titular", "Cor_Hex"],
+        "properties": {
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Nome_Conta": { "type": "string", "example": "Nubank" },
+          "Tipo": { "type": "string", "enum": ["Corrente", "Crédito", "Dinheiro"], "example": "Crédito" },
+          "Titular": { "type": "string", "example": "João Silva" },
+          "Ultimos_Digitos": { "type": "string", "maxLength": 4, "example": "5678" },
+          "Cor_Hex": { "type": "string", "example": "#820AD1" }
+        }
+      },
+      "ContaCartaoUpdate": {
+        "type": "object",
+        "properties": {
+          "Nome_Conta": { "type": "string" },
+          "Tipo": { "type": "string", "enum": ["Corrente", "Crédito", "Dinheiro"] },
+          "Titular": { "type": "string" },
+          "Ultimos_Digitos": { "type": "string" },
+          "Cor_Hex": { "type": "string" }
+        }
+      },
+      "Renda": {
+        "type": "object",
+        "properties": {
+          "Id_Renda": { "type": "string", "format": "uuid" },
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Descricao_Renda": { "type": "string" },
+          "Valor_Renda": { "type": "number", "format": "float" },
+          "Data": { "type": "string", "format": "date" }
+        }
+      },
+      "RendaCreate": {
+        "type": "object",
+        "required": ["Id_Usuario", "Descricao_Renda", "Valor_Renda", "Data"],
+        "properties": {
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Descricao_Renda": { "type": "string", "example": "Salário" },
+          "Valor_Renda": { "type": "number", "minimum": 0, "example": 5000.00 },
+          "Data": { "type": "string", "format": "date", "example": "2026-02-01" }
+        }
+      },
+      "RendaUpdate": {
+        "type": "object",
+        "properties": {
+          "Descricao_Renda": { "type": "string" },
+          "Valor_Renda": { "type": "number" },
+          "Data": { "type": "string", "format": "date" }
+        }
+      },
+      "DespesaCreate": {
+        "type": "object",
+        "required": ["Id_Usuario", "Id_Conta", "Descricao_Despesa", "Data", "Categoria"],
+        "properties": {
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Id_Conta": { "type": "string", "format": "uuid" },
+          "Descricao_Despesa": { "type": "string", "example": "Notebook Dell" },
+          "Valor_Total": { "type": "number", "example": 4800.00, "description": "Valor total da compra (usado quando parcelado)" },
+          "Valor_Parcela": { "type": "number", "example": 250.00, "description": "Valor da parcela (usado quando à vista, Numero_Parcelas=1)" },
+          "Data": { "type": "string", "format": "date", "example": "2026-02-15" },
+          "Categoria": { "type": "string", "example": "Eletrônicos" },
+          "Numero_Parcelas": { "type": "integer", "minimum": 1, "default": 1, "example": 12, "description": "Se > 1, gera parcelamento automático" }
+        }
+      },
+      "Despesa": {
+        "type": "object",
+        "properties": {
+          "Id_Despesa": { "type": "string", "format": "uuid" },
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Id_Conta": { "type": "string", "format": "uuid" },
+          "Id_Parcelamento": { "type": "string", "format": "uuid", "nullable": true },
+          "Descricao_Despesa": { "type": "string" },
+          "Valor_Parcela": { "type": "number" },
+          "Data": { "type": "string", "format": "date" },
+          "Categoria": { "type": "string" },
+          "Numero_Parcela": { "type": "integer" },
+          "conta": { "$ref": "#/components/schemas/ContaCartao" },
+          "parcelamento": { "$ref": "#/components/schemas/Parcelamento" }
+        }
+      },
+      "DespesaUpdate": {
+        "type": "object",
+        "properties": {
+          "Descricao_Despesa": { "type": "string" },
+          "Valor_Parcela": { "type": "number" },
+          "Data": { "type": "string", "format": "date" },
+          "Categoria": { "type": "string" },
+          "Id_Conta": { "type": "string", "format": "uuid" }
+        }
+      },
+      "Parcelamento": {
+        "type": "object",
+        "properties": {
+          "Id_Parcelamento": { "type": "string", "format": "uuid" },
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Descricao_Parcela": { "type": "string" },
+          "Valor_Total": { "type": "number" },
+          "Qtd_Parcelas": { "type": "integer" },
+          "Data_Inicio": { "type": "string", "format": "date" }
+        }
+      },
+      "ParcelamentoCreate": {
+        "type": "object",
+        "required": ["Id_Usuario", "Descricao_Parcela", "Valor_Total", "Qtd_Parcelas", "Data_Inicio"],
+        "properties": {
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Descricao_Parcela": { "type": "string", "example": "iPhone 15" },
+          "Valor_Total": { "type": "number", "example": 6000.00 },
+          "Qtd_Parcelas": { "type": "integer", "minimum": 1, "example": 10 },
+          "Data_Inicio": { "type": "string", "format": "date", "example": "2026-03-01" }
+        }
+      },
+      "ParcelamentoUpdate": {
+        "type": "object",
+        "properties": {
+          "Descricao_Parcela": { "type": "string" },
+          "Valor_Total": { "type": "number" },
+          "Qtd_Parcelas": { "type": "integer" },
+          "Data_Inicio": { "type": "string", "format": "date" }
+        }
+      },
+      "Reserva": {
+        "type": "object",
+        "properties": {
+          "Id_Reserva": { "type": "string", "format": "uuid" },
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Nome_Objetivo": { "type": "string" },
+          "Valor_Alvo": { "type": "number" },
+          "Valor_Atual": { "type": "number" },
+          "Data_Limite": { "type": "string", "format": "date", "nullable": true },
+          "progresso": { "type": "number", "description": "Porcentagem calculada" }
+        }
+      },
+      "ReservaCreate": {
+        "type": "object",
+        "required": ["Id_Usuario", "Nome_Objetivo", "Valor_Alvo"],
+        "properties": {
+          "Id_Usuario": { "type": "string", "format": "uuid" },
+          "Nome_Objetivo": { "type": "string", "example": "Viagem Europa" },
+          "Valor_Alvo": { "type": "number", "example": 15000.00 },
+          "Valor_Atual": { "type": "number", "default": 0, "example": 0 },
+          "Data_Limite": { "type": "string", "format": "date", "nullable": true, "example": "2026-12-31" }
+        }
+      },
+      "ReservaUpdate": {
+        "type": "object",
+        "properties": {
+          "Nome_Objetivo": { "type": "string" },
+          "Valor_Alvo": { "type": "number" },
+          "Data_Limite": { "type": "string", "format": "date" }
+        }
+      }
+    }
+  }
+}

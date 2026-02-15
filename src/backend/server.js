@@ -1,13 +1,20 @@
 const app = require("./app");
 const env = require("./config/env");
-const { pool, checkDatabaseConnection } = require("./config/database");
+const { sequelize } = require("./models");
 
 let server;
 
 async function startServer() {
   try {
-    await checkDatabaseConnection();
-    console.log("[backend] Conexao com PostgreSQL estabelecida com sucesso.");
+    // Testar conexão com banco de dados
+    await sequelize.authenticate();
+    console.log("[backend] Conexão com PostgreSQL estabelecida com sucesso.");
+
+    // Sincronizar models (não altera estrutura em produção)
+    if (env.nodeEnv === 'development') {
+      await sequelize.sync({ alter: false });
+      console.log("[backend] Models sincronizados.");
+    }
 
     server = app.listen(env.port, () => {
       console.log(
@@ -28,7 +35,7 @@ async function shutdown(signal) {
       server.close();
     }
 
-    await pool.end();
+    await sequelize.close();
     process.exit(0);
   } catch (error) {
     console.error("[backend] Erro no encerramento:", error.message);

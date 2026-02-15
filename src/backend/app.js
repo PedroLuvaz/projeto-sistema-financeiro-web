@@ -7,6 +7,8 @@ const env = require("./config/env");
 const routes = require("./routes");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./docs/swagger.json");
 
 const app = express();
 
@@ -26,6 +28,10 @@ app.get("/", (req, res) => {
     message: "Backend do sistema financeiro online.",
   });
 });
+
+// Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get("/api-docs.json", (req, res) => res.json(swaggerSpec));
 
 app.use("/api", routes);
 

@@ -1,11 +1,11 @@
 const { Router } = require("express");
-const { pool } = require("../config/database");
+const sequelize = require("../config/database");
 
 const router = Router();
 
 router.get("/", async (req, res, next) => {
   try {
-    await pool.query("SELECT 1");
+    await sequelize.authenticate();
 
     return res.status(200).json({
       success: true,
