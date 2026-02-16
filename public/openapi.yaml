@@ -1,0 +1,1911 @@
+openapi: 3.0.0
+info:
+  title: FinanceApp API
+  description: Sistema de gerenciamento financeiro pessoal - API completa
+  version: 1.0.0
+  contact:
+    name: FinanceApp Support
+    email: suporte@financeapp.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Servidor de Desenvolvimento
+  - url: https://seu-dominio.com/api
+    description: Servidor de Produção
+
+tags:
+  - name: Health
+    description: Status da API e banco de dados
+  - name: Usuários
+    description: Autenticação e gerenciamento de usuários
+  - name: Membros Família
+    description: Gerenciamento de membros da família
+  - name: Contas/Cartões
+    description: Gerenciamento de contas bancárias e cartões de crédito
+  - name: Rendas
+    description: Gerenciamento de rendas/receitas
+  - name: Despesas
+    description: Gerenciamento de despesas
+  - name: Parcelamentos
+    description: Gerenciamento de parcelamentos e faturas
+  - name: Reservas
+    description: Gerenciamento de reservas e objetivos financeiros
+  - name: Dashboard
+    description: Relatórios e resumos financeiros
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtido através do endpoint /usuarios/login
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Mensagem de erro
+
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+
+    Usuario:
+      type: object
+      properties:
+        Id_Usuario:
+          type: string
+          format: uuid
+          example: 9846ffe7-d40b-478e-9893-f214ef4051ee
+        Nome:
+          type: string
+          example: João Silva
+        Email:
+          type: string
+          format: email
+          example: joao@email.com
+        Senha_Hash:
+          type: string
+        Data_Criacao:
+          type: string
+          format: date-time
+
+    ContaCartao:
+      type: object
+      properties:
+        Id_Conta:
+          type: string
+          format: uuid
+        Id_Usuario:
+          type: string
+          format: uuid
+        Nome_Conta:
+          type: string
+          example: Nubank
+        Tipo:
+          type: string
+          enum: [Conta Corrente, Cartão de Crédito, Poupança, Conta Digital]
+        Ultimos_Digitos:
+          type: string
+          example: '1234'
+        Limite_Credito:
+          type: number
+          nullable: true
+        Cor_Hex:
+          type: string
+          example: '#8B5CF6'
+
+    Renda:
+      type: object
+      properties:
+        Id_Renda:
+          type: string
+          format: uuid
+        Id_Usuario:
+          type: string
+          format: uuid
+        Descricao_Renda:
+          type: string
+          example: Salário
+        Valor_Renda:
+          type: number
+          example: 5000.00
+        Data:
+          type: string
+          format: date
+        Recorrente:
+          type: boolean
+
+    Despesa:
+      type: object
+      properties:
+        Id_Despesa:
+          type: string
+          format: uuid
+        Id_Usuario:
+          type: string
+          format: uuid
+        Id_Conta:
+          type: string
+          format: uuid
+        Descricao_Despesa:
+          type: string
+          example: Mercado
+        Valor_Parcela:
+          type: number
+          example: 150.00
+        Categoria:
+          type: string
+          example: Alimentação
+        Data:
+          type: string
+          format: date
+        Id_Parcelamento:
+          type: string
+          format: uuid
+          nullable: true
+        Numero_Parcela:
+          type: integer
+          nullable: true
+
+    ParcelamentoAgrupador:
+      type: object
+      properties:
+        Id_Parcelamento:
+          type: string
+          format: uuid
+        Id_Usuario:
+          type: string
+          format: uuid
+        Descricao_Parcela:
+          type: string
+          example: Notebook Dell
+        Valor_Total:
+          type: number
+          example: 3600.00
+        Qtd_Parcelas:
+          type: integer
+          example: 12
+        Data_Inicio:
+          type: string
+          format: date
+
+    Reserva:
+      type: object
+      properties:
+        Id_Reserva:
+          type: string
+          format: uuid
+        Id_Usuario:
+          type: string
+          format: uuid
+        Nome_Objetivo:
+          type: string
+          example: Viagem para Europa
+        Valor_Alvo:
+          type: number
+          example: 10000.00
+        Valor_Atual:
+          type: number
+          example: 2500.00
+        Data_Limite:
+          type: string
+          format: date
+          nullable: true
+
+    MembroFamilia:
+      type: object
+      properties:
+        Id_Membro:
+          type: string
+          format: uuid
+        Id_Usuario:
+          type: string
+          format: uuid
+        Nome_Membro:
+          type: string
+          example: Maria Silva
+        Parentesco:
+          type: string
+          example: Esposa
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Verificar saúde da API
+      description: Retorna status da API e conexão com banco de dados
+      responses:
+        '200':
+          description: API funcionando
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  database:
+                    type: string
+                    example: connected
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /usuarios/registrar:
+    post:
+      tags:
+        - Usuários
+      summary: Registrar novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nome
+                - email
+                - senha
+              properties:
+                nome:
+                  type: string
+                  example: João Silva
+                email:
+                  type: string
+                  format: email
+                  example: joao@email.com
+                senha:
+                  type: string
+                  format: password
+                  example: senha123
+      responses:
+        '201':
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Usuario'
+        '400':
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /usuarios/login:
+    post:
+      tags:
+        - Usuários
+      summary: Login de usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - senha
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: joao@email.com
+                senha:
+                  type: string
+                  format: password
+                  example: senha123
+      responses:
+        '200':
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      usuario:
+                        $ref: '#/components/schemas/Usuario'
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /usuarios:
+    get:
+      tags:
+        - Usuários
+      summary: Listar todos os usuários
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Usuario'
+
+  /usuarios/{id}:
+    get:
+      tags:
+        - Usuários
+      summary: Obter usuário por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Usuário encontrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Usuario'
+
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                senha:
+                  type: string
+      responses:
+        '200':
+          description: Usuário atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+    delete:
+      tags:
+        - Usuários
+      summary: Deletar usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Usuário deletado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /contas-cartoes:
+    post:
+      tags:
+        - Contas/Cartões
+      summary: Criar nova conta/cartão
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_Usuario
+                - Nome_Conta
+                - Tipo
+              properties:
+                Id_Usuario:
+                  type: string
+                  format: uuid
+                Nome_Conta:
+                  type: string
+                Tipo:
+                  type: string
+                  enum: [Conta Corrente, Cartão de Crédito, Poupança, Conta Digital]
+                Ultimos_Digitos:
+                  type: string
+                Limite_Credito:
+                  type: number
+                Cor_Hex:
+                  type: string
+      responses:
+        '201':
+          description: Conta criada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ContaCartao'
+
+  /contas-cartoes/usuario/{idUsuario}:
+    get:
+      tags:
+        - Contas/Cartões
+      summary: Listar contas do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tipo
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de contas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ContaCartao'
+
+  /contas-cartoes/{id}:
+    get:
+      tags:
+        - Contas/Cartões
+      summary: Obter conta por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Conta encontrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ContaCartao'
+
+    put:
+      tags:
+        - Contas/Cartões
+      summary: Atualizar conta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Nome_Conta:
+                  type: string
+                Tipo:
+                  type: string
+                Ultimos_Digitos:
+                  type: string
+                Limite_Credito:
+                  type: number
+                Cor_Hex:
+                  type: string
+      responses:
+        '200':
+          description: Conta atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+    delete:
+      tags:
+        - Contas/Cartões
+      summary: Deletar conta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Conta deletada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /rendas:
+    post:
+      tags:
+        - Rendas
+      summary: Criar nova renda
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_Usuario
+                - Descricao_Renda
+                - Valor_Renda
+                - Data
+              properties:
+                Id_Usuario:
+                  type: string
+                  format: uuid
+                Descricao_Renda:
+                  type: string
+                Valor_Renda:
+                  type: number
+                Data:
+                  type: string
+                  format: date
+                Recorrente:
+                  type: boolean
+      responses:
+        '201':
+          description: Renda criada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Renda'
+
+  /rendas/usuario/{idUsuario}:
+    get:
+      tags:
+        - Rendas
+      summary: Listar rendas do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          schema:
+            type: integer
+        - name: busca
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de rendas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Renda'
+
+  /rendas/usuario/{idUsuario}/total:
+    get:
+      tags:
+        - Rendas
+      summary: Total de rendas do mês
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Total de rendas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                        example: 5000.00
+
+  /rendas/{id}:
+    get:
+      tags:
+        - Rendas
+      summary: Obter renda por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Renda encontrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Renda'
+
+    put:
+      tags:
+        - Rendas
+      summary: Atualizar renda
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Descricao_Renda:
+                  type: string
+                Valor_Renda:
+                  type: number
+                Data:
+                  type: string
+                  format: date
+                Recorrente:
+                  type: boolean
+      responses:
+        '200':
+          description: Renda atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+    delete:
+      tags:
+        - Rendas
+      summary: Deletar renda
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Renda deletada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /despesas:
+    post:
+      tags:
+        - Despesas
+      summary: Criar nova despesa
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_Usuario
+                - Id_Conta
+                - Descricao_Despesa
+                - Valor_Parcela
+                - Categoria
+                - Data
+              properties:
+                Id_Usuario:
+                  type: string
+                  format: uuid
+                Id_Conta:
+                  type: string
+                  format: uuid
+                Descricao_Despesa:
+                  type: string
+                Valor_Parcela:
+                  type: number
+                Categoria:
+                  type: string
+                Data:
+                  type: string
+                  format: date
+                parcelamento:
+                  type: object
+                  properties:
+                    qtdParcelas:
+                      type: integer
+                    valorTotal:
+                      type: number
+      responses:
+        '201':
+          description: Despesa criada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Despesa'
+
+  /despesas/usuario/{idUsuario}:
+    get:
+      tags:
+        - Despesas
+      summary: Listar despesas do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          schema:
+            type: integer
+        - name: categoria
+          in: query
+          schema:
+            type: string
+        - name: busca
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de despesas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Despesa'
+
+  /despesas/usuario/{idUsuario}/total:
+    get:
+      tags:
+        - Despesas
+      summary: Total de despesas do mês
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Total de despesas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+
+  /despesas/usuario/{idUsuario}/categorias:
+    get:
+      tags:
+        - Despesas
+      summary: Despesas agrupadas por categoria
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Despesas por categoria
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        categoria:
+                          type: string
+                        total:
+                          type: number
+
+  /despesas/usuario/{idUsuario}/top:
+    get:
+      tags:
+        - Despesas
+      summary: Top 5 maiores despesas
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Top despesas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Despesa'
+
+  /despesas/usuario/{idUsuario}/exportar-csv:
+    get:
+      tags:
+        - Despesas
+      summary: Exportar despesas em CSV
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Arquivo CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /despesas/{id}:
+    get:
+      tags:
+        - Despesas
+      summary: Obter despesa por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Despesa encontrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Despesa'
+
+    put:
+      tags:
+        - Despesas
+      summary: Atualizar despesa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Descricao_Despesa:
+                  type: string
+                Valor_Parcela:
+                  type: number
+                Categoria:
+                  type: string
+                Data:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Despesa atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+    delete:
+      tags:
+        - Despesas
+      summary: Deletar despesa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: deletarParcelamento
+          in: query
+          schema:
+            type: boolean
+            description: Se true, deleta todas as parcelas do parcelamento
+      responses:
+        '200':
+          description: Despesa deletada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /parcelamentos:
+    post:
+      tags:
+        - Parcelamentos
+      summary: Criar novo parcelamento
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_Usuario
+                - Descricao_Parcela
+                - Valor_Total
+                - Qtd_Parcelas
+                - Data_Inicio
+              properties:
+                Id_Usuario:
+                  type: string
+                  format: uuid
+                Descricao_Parcela:
+                  type: string
+                Valor_Total:
+                  type: number
+                Qtd_Parcelas:
+                  type: integer
+                Data_Inicio:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Parcelamento criado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ParcelamentoAgrupador'
+
+  /parcelamentos/usuario/{idUsuario}:
+    get:
+      tags:
+        - Parcelamentos
+      summary: Listar parcelamentos do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de parcelamentos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ParcelamentoAgrupador'
+
+  /parcelamentos/usuario/{idUsuario}/dividas-futuras:
+    get:
+      tags:
+        - Parcelamentos
+      summary: Total de dívidas futuras
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Total de dívidas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      total_dividas_futuras:
+                        type: number
+
+  /parcelamentos/usuario/{idUsuario}/cronograma:
+    get:
+      tags:
+        - Parcelamentos
+      summary: Cronograma de parcelas futuras
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Cronograma mensal
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        mes:
+                          type: string
+                          example: '2026-03'
+                        total:
+                          type: number
+                        parcelas:
+                          type: array
+
+  /parcelamentos/usuario/{idUsuario}/faturas:
+    get:
+      tags:
+        - Parcelamentos
+      summary: Faturas por cartão
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Faturas por conta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+
+  /parcelamentos/{id}:
+    get:
+      tags:
+        - Parcelamentos
+      summary: Obter parcelamento por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Parcelamento encontrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ParcelamentoAgrupador'
+
+    put:
+      tags:
+        - Parcelamentos
+      summary: Atualizar parcelamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Descricao_Parcela:
+                  type: string
+                Valor_Total:
+                  type: number
+      responses:
+        '200':
+          description: Parcelamento atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+    delete:
+      tags:
+        - Parcelamentos
+      summary: Deletar parcelamento e todas as parcelas
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Parcelamento deletado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /reservas:
+    post:
+      tags:
+        - Reservas
+      summary: Criar nova reserva
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_Usuario
+                - Nome_Objetivo
+                - Valor_Alvo
+                - Valor_Atual
+              properties:
+                Id_Usuario:
+                  type: string
+                  format: uuid
+                Nome_Objetivo:
+                  type: string
+                Valor_Alvo:
+                  type: number
+                Valor_Atual:
+                  type: number
+                Data_Limite:
+                  type: string
+                  format: date
+                  nullable: true
+      responses:
+        '201':
+          description: Reserva criada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Reserva'
+
+  /reservas/usuario/{idUsuario}:
+    get:
+      tags:
+        - Reservas
+      summary: Listar reservas do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de reservas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Reserva'
+
+  /reservas/{id}:
+    get:
+      tags:
+        - Reservas
+      summary: Obter reserva por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reserva encontrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Reserva'
+
+    put:
+      tags:
+        - Reservas
+      summary: Atualizar reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Nome_Objetivo:
+                  type: string
+                Valor_Alvo:
+                  type: number
+                Valor_Atual:
+                  type: number
+                Data_Limite:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Reserva atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+    delete:
+      tags:
+        - Reservas
+      summary: Deletar reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reserva deletada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /reservas/{id}/adicionar:
+    put:
+      tags:
+        - Reservas
+      summary: Adicionar valor à reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - valor
+              properties:
+                valor:
+                  type: number
+                  example: 500.00
+      responses:
+        '200':
+          description: Valor adicionado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /reservas/{id}/retirar:
+    put:
+      tags:
+        - Reservas
+      summary: Retirar valor da reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - valor
+              properties:
+                valor:
+                  type: number
+                  example: 200.00
+      responses:
+        '200':
+          description: Valor retirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /membros-familia:
+    post:
+      tags:
+        - Membros Família
+      summary: Criar novo membro
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_Usuario
+                - Nome_Membro
+                - Parentesco
+              properties:
+                Id_Usuario:
+                  type: string
+                  format: uuid
+                Nome_Membro:
+                  type: string
+                Parentesco:
+                  type: string
+      responses:
+        '201':
+          description: Membro criado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MembroFamilia'
+
+  /membros-familia/usuario/{idUsuario}:
+    get:
+      tags:
+        - Membros Família
+      summary: Listar membros do usuário
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de membros
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/MembroFamilia'
+
+  /membros-familia/{id}:
+    get:
+      tags:
+        - Membros Família
+      summary: Obter membro por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Membro encontrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MembroFamilia'
+
+    put:
+      tags:
+        - Membros Família
+      summary: Atualizar membro
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Nome_Membro:
+                  type: string
+                Parentesco:
+                  type: string
+      responses:
+        '200':
+          description: Membro atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+    delete:
+      tags:
+        - Membros Família
+      summary: Deletar membro
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Membro deletado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+
+  /dashboard/usuario/{idUsuario}/resumo-mensal:
+    get:
+      tags:
+        - Dashboard
+      summary: Resumo financeiro mensal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mes
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: ano
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Resumo mensal
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      total_rendas:
+                        type: number
+                      total_despesas:
+                        type: number
+                      saldo:
+                        type: number
+                      despesas_por_categoria:
+                        type: array
+
+  /dashboard/usuario/{idUsuario}/relatorio-anual:
+    get:
+      tags:
+        - Dashboard
+      summary: Relatório anual completo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: ano
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Relatório anual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      resumo:
+                        type: object
+                      evolucao_mensal:
+                        type: array
+                      despesas_por_categoria:
+                        type: array
+                      despesas_por_conta:
+                        type: array
+
+  /dashboard/usuario/{idUsuario}/relatorio-anual/csv:
+    get:
+      tags:
+        - Dashboard
+      summary: Exportar relatório anual em CSV
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idUsuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: ano
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Arquivo CSV
+          content:
+            text/csv:
+              schema:
+                type: string
