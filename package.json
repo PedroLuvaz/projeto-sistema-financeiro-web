@@ -1,5 +1,27 @@
 {
+  "name": "projeto-sistema-financeiro-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
   "dependencies": {
-    "bcrypt": "^6.0.0"
+    "axios": "^1.13.5",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^0.564.0",
+    "next": "^15.3.4",
+    "pg": "^8.18.0",
+    "pg-hstore": "^2.3.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^2.15.3",
+    "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.10",
+    "tailwindcss": "^4.1.10"
   }
 }
