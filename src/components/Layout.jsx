@@ -30,31 +30,56 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--color-surface)' }}>
       {/* Sidebar */}
       <aside style={{
         width: collapsed ? 72 : 240,
-        background: 'linear-gradient(180deg, #0f172a 0%, #1a1f3a 100%)',
+        backgroundColor: 'var(--color-surface-2)',
         borderRight: '1px solid var(--color-border)',
-        display: 'flex', flexDirection: 'column',
-        transition: 'width .3s ease', overflow: 'hidden', flexShrink: 0,
+        display: 'flex', 
+        flexDirection: 'column',
+        transition: 'width .3s ease', 
+        overflow: 'hidden', 
+        flexShrink: 0,
       }}>
         {/* Logo */}
         <div style={{
-          padding: '20px 16px', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '20px 16px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 12,
           borderBottom: '1px solid var(--color-border)',
         }}>
           <div style={{
             width: 38, height: 38, borderRadius: 12,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <Wallet size={20} color="#fff" />
           </div>
+          {/* Substitua o span do nome por este bloco */}
           {!collapsed && (
-            <span style={{ fontWeight: 700, fontSize: '1.1rem', background: 'linear-gradient(135deg, #818cf8, #c4b5fd)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              FinanceApp
-            </span>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'baseline', 
+              letterSpacing: '-0.02em',
+              marginLeft: '4px'
+            }}>
+              <span style={{ 
+                fontWeight: 800, 
+                fontSize: '1.2rem', 
+                color: 'var(--color-text)' 
+              }}>
+                Finance
+              </span>
+              <span style={{ 
+                fontWeight: 400, 
+                fontSize: '1.2rem', 
+                color: 'var(--color-primary)' 
+              }}>
+                App
+              </span>
+            </div>
           )}
           <button onClick={() => setCollapsed(!collapsed)} style={{
             marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--color-text-muted)',
@@ -65,7 +90,7 @@ export default function Layout({ children }) {
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {navItems.map(({ to, icon: Icon, label }) => {
             const active = isActive(to)
             return (
@@ -74,12 +99,11 @@ export default function Layout({ children }) {
                 padding: collapsed ? '12px 0' : '12px 14px',
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 borderRadius: 12, textDecoration: 'none', fontSize: '.875rem', fontWeight: 500,
-                color: active ? '#fff' : 'var(--color-text-muted)',
-                background: active ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.1))' : 'transparent',
-                border: active ? '1px solid rgba(99,102,241,0.3)' : '1px solid transparent',
+                color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                backgroundColor: active ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
                 transition: 'all .2s',
               }}>
-                <Icon size={20} />
+                <Icon size={20} color={active ? 'var(--color-primary)' : 'var(--color-text-muted)'} />
                 {!collapsed && label}
               </Link>
             )
@@ -93,23 +117,30 @@ export default function Layout({ children }) {
         }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10,
-            background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
+            background: 'var(--color-surface-3)',
+            border: '1px solid var(--color-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '.8rem', fontWeight: 700, color: '#fff', flexShrink: 0,
+            fontSize: '.8rem', fontWeight: 700, color: 'var(--color-primary)', flexShrink: 0,
           }}>
             {user?.Nome?.charAt(0)?.toUpperCase()}
           </div>
           {!collapsed && (
             <>
               <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ fontSize: '.8125rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '.8125rem', fontWeight: 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user?.Nome}
                 </div>
                 <div style={{ fontSize: '.7rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user?.Email}
                 </div>
               </div>
-              <button onClick={logout} className="btn-icon" style={{ width: 32, height: 32 }}>
+              <button 
+                onClick={logout} 
+                style={{ 
+                  background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer',
+                  padding: 4, display: 'flex', alignItems: 'center'
+                }}
+              >
                 <LogOut size={16} />
               </button>
             </>

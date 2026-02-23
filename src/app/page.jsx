@@ -47,9 +47,25 @@ export default function Dashboard() {
       <div style={{ animation: 'fadeIn .4s ease' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: 4 }}>Dashboard</h1>
+            <div>
+            <h1 style={{ 
+              fontSize: '1.875rem', 
+              fontWeight: 700, 
+              color: 'var(--color-primary)', // Aplica o verde vibrante
+              marginBottom: '4px' 
+            }}>
+              Dashboard
+            </h1>
+            <p style={{ 
+              fontSize: '0.9rem', 
+              color: 'var(--color-text-secondary)', // Trocado de 'muted' para 'secondary'
+              opacity: 0.9 
+            }}>
+              Olá, <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>{user?.Nome?.split(' ')[0]}</span>! Aqui está seu resumo financeiro.
+            </p>
+          </div>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '.9rem' }}>
-              Olá, <span style={{ color: 'var(--color-primary-light)', fontWeight: 600 }}>{user?.Nome?.split(' ')[0]}</span>! Aqui está seu resumo financeiro.
+              {/* Olá, <span style={{ color: 'var(--color-primary-light)', fontWeight: 600 }}>{user?.Nome?.split(' ')[0]}</span>! Aqui está seu resumo financeiro. */}
             </p>
           </div>
           <MonthSelector mes={mes} ano={ano} onChange={(m, a) => { setMes(m); setAno(a) }} />
