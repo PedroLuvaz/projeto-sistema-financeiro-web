@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   LayoutDashboard, Receipt, TrendingUp, CreditCard, CalendarClock,
-  Target, FileBarChart, LogOut, Wallet, Menu, ShieldCheck
+  Target, FileBarChart, LogOut, Wallet, Menu, ShieldCheck, FileUp
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -17,6 +17,7 @@ const navItems = [
   { to: '/parcelamentos', icon: CalendarClock, label: 'Parcelas' },
   { to: '/reservas', icon: Target, label: 'Reservas' },
   { to: '/relatorios', icon: FileBarChart, label: 'Relatórios' },
+  { to: '/importar', icon: FileUp, label: 'Importar CSV' },
 ]
 
 export default function Layout({ children }) {
