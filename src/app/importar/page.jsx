@@ -302,7 +302,7 @@ function Step2Mapeamento({ data, onNext, onBack }) {
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 24, fontSize: '.875rem', color: 'var(--color-text-secondary)' }}>
         <input type="checkbox" checked={ignorarNegativo} onChange={(e) => setIgnorarNegativo(e.target.checked)} />
-        Ignorar valores positivos (créditos/estornos)
+        Ignorar valores negativos (pagamentos recebidos/estornos)
       </label>
 
       {error && (

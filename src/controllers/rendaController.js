@@ -26,8 +26,8 @@ class RendaController {
     return { status: 200, data: renda }
   }
 
-  async deletar(id) {
-    const resultado = await rendaService.deletar(id)
+  async deletar(id, deletarTodas = false) {
+    const resultado = await rendaService.deletar(id, deletarTodas)
     return { status: 200, data: resultado }
   }
 }

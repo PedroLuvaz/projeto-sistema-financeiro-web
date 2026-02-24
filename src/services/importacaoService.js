@@ -99,14 +99,20 @@ function parsearData(valor) {
   return null
 }
 
-// Detecta padrão de parcela: "NOTEBOOK DELL 05/12" → { atual: 5, total: 12, descBase: "NOTEBOOK DELL" }
+// Detecta padrão de parcela:
+//   "NOTEBOOK DELL 05/12"          → { atual: 5, total: 12, descBase: "NOTEBOOK DELL" }
+//   "Mp *Aliexpress - Parcela 6/10" → { atual: 6, total: 10, descBase: "Mp *Aliexpress" }
 function detectarParcela(descricao) {
   const match = descricao.match(/\b(\d{1,2})\/(\d{1,2})\s*$/)
   if (!match) return null
   const atual = parseInt(match[1])
   const total = parseInt(match[2])
   if (atual < 1 || total < 2 || atual > total || total > 60) return null
-  const descBase = descricao.slice(0, match.index).trim()
+  // Remove o sufixo "- Parcela" (ou variações) antes do X/Y
+  const descBase = descricao
+    .slice(0, match.index)
+    .replace(/[-–\s]*parcela\s*$/i, '')
+    .trim()
   return { atual, total, descBase }
 }
 
@@ -168,7 +174,7 @@ class ImportacaoService {
 
       const valorAbs = Math.abs(valor)
       if (valorAbs === 0) continue
-      if (ignorarNegativo && valor > 0) continue  // ignora créditos
+      if (ignorarNegativo && valor < 0) continue  // ignora créditos/estornos (valores negativos)
 
       const parcela = detectarParcela(desc)
       const id = randomUUID()

@@ -34,6 +34,16 @@ export default (sequelize) => {
       type: DataTypes.DATEONLY,
       allowNull: false,
       field: 'data'
+    },
+    Fixa: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      field: 'fixa'
+    },
+    Dia_Vencimento: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'dia_vencimento'
     }
   }, {
     tableName: 'renda',

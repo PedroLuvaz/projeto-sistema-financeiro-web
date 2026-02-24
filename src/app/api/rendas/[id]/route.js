@@ -19,6 +19,8 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   return handleRequest(request, async () => {
     const { id } = await params
-    return rendaController.deletar(id)
+    const { searchParams } = new URL(request.url)
+    const deletarTodas = searchParams.get('deletarTodas') === 'true'
+    return rendaController.deletar(id, deletarTodas)
   })
 }
