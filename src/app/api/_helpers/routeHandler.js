@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { verificarToken } from '@/middleware/auth'
 
-async function handleRequest(request, handler, { auth = true } = {}) {
+async function handleRequest(request, handler, { auth = true, adminOnly = false } = {}) {
   try {
-    if (auth) {
+    if (auth || adminOnly) {
       const authResult = verificarToken(request)
       if (!authResult.success) {
         return NextResponse.json(
@@ -13,6 +13,14 @@ async function handleRequest(request, handler, { auth = true } = {}) {
       }
       request.usuarioId = authResult.usuarioId
       request.usuarioEmail = authResult.usuarioEmail
+      request.usuarioCargo = authResult.usuarioCargo
+
+      if (adminOnly && authResult.usuarioCargo !== 'admin') {
+        return NextResponse.json(
+          { success: false, error: 'Acesso restrito a administradores' },
+          { status: 403 }
+        )
+      }
     }
 
     const result = await handler(request)

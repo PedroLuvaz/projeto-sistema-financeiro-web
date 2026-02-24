@@ -26,7 +26,8 @@ function verificarToken(request) {
     return {
       success: true,
       usuarioId: decoded.id,
-      usuarioEmail: decoded.email
+      usuarioEmail: decoded.email,
+      usuarioCargo: decoded.cargo || 'usuario'
     }
   } catch (error) {
     if (error.name === 'TokenExpiredError') {

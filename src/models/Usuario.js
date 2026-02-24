@@ -27,6 +27,12 @@ export default (sequelize) => {
       allowNull: false,
       field: 'senha'
     },
+    Cargo: {
+      type: DataTypes.ENUM('usuario', 'admin'),
+      allowNull: false,
+      defaultValue: 'usuario',
+      field: 'cargo'
+    },
     Data_Criacao: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

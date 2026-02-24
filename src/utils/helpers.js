@@ -6,7 +6,10 @@ export function formatCurrency(value) {
 
 export function formatDate(dateStr) {
   if (!dateStr) return '-'
-  const d = new Date(dateStr + 'T00:00:00')
+  // Se já é ISO completo (com T), parseia direto; se é só data (YYYY-MM-DD), adiciona
+  // T00:00:00 para evitar interpretação UTC que causaria um dia a menos no fuso -3
+  const d = String(dateStr).includes('T') ? new Date(dateStr) : new Date(dateStr + 'T00:00:00')
+  if (isNaN(d)) return '-'
   return d.toLocaleDateString('pt-BR')
 }
 

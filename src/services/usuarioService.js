@@ -8,7 +8,7 @@ const { Usuario } = models
 class UsuarioService {
   gerarToken(usuario) {
     return jwt.sign(
-      { id: usuario.Id_Usuario, email: usuario.Email },
+      { id: usuario.Id_Usuario, email: usuario.Email, cargo: usuario.Cargo },
       env.jwt.secret,
       { expiresIn: env.jwt.expiresIn }
     )

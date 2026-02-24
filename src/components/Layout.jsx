@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   LayoutDashboard, Receipt, TrendingUp, CreditCard, CalendarClock,
-  Target, FileBarChart, LogOut, Wallet, Menu
+  Target, FileBarChart, LogOut, Wallet, Menu, ShieldCheck
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -21,6 +21,7 @@ const navItems = [
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
+  const isAdmin = user?.Cargo === 'admin'
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
 
@@ -108,6 +109,27 @@ export default function Layout({ children }) {
               </Link>
             )
           })}
+
+          {isAdmin && (
+            <>
+              <div style={{
+                height: 1, background: 'var(--color-border)',
+                margin: '8px 8px', opacity: 0.6
+              }} />
+              <Link href="/admin" style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: collapsed ? '12px 0' : '12px 14px',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                borderRadius: 12, textDecoration: 'none', fontSize: '.875rem', fontWeight: 500,
+                color: isActive('/admin') ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                backgroundColor: isActive('/admin') ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                transition: 'all .2s',
+              }}>
+                <ShieldCheck size={20} color={isActive('/admin') ? 'var(--color-primary)' : 'var(--color-text-muted)'} />
+                {!collapsed && 'Admin'}
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* User */}
@@ -127,8 +149,13 @@ export default function Layout({ children }) {
           {!collapsed && (
             <>
               <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ fontSize: '.8125rem', fontWeight: 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '.8125rem', fontWeight: 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 6 }}>
                   {user?.Nome}
+                  {isAdmin && (
+                    <span style={{ fontSize: '.65rem', padding: '1px 6px', borderRadius: 5, background: 'rgba(16,185,129,.15)', color: 'var(--color-primary)', fontWeight: 700, flexShrink: 0 }}>
+                      Admin
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontSize: '.7rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user?.Email}
