@@ -33,6 +33,22 @@ export default (sequelize) => {
       defaultValue: 'usuario',
       field: 'cargo'
     },
+    Codigo_Verificacao: {
+      type: DataTypes.STRING(6),
+      allowNull: true,
+      field: 'codigo_verificacao'
+    },
+    Codigo_Expiracao: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'codigo_expiracao'
+    },
+    Email_Verificado: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'email_verificado'
+    },
     Data_Criacao: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,

@@ -36,11 +36,8 @@ export function AuthProvider({ children }) {
 
   const register = async (nome, email, senha) => {
     const res = await api.post('/usuarios/registrar', { Nome: nome, Email: email, Senha: senha })
-    const { token, usuario } = res.data.data
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(usuario))
-    setUser(usuario)
-    return usuario
+    // Retorna { requiresVerification: true, email } — login ocorre na página /verificar-email
+    return res.data.data
   }
 
   const logout = () => {

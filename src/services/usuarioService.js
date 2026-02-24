@@ -2,8 +2,13 @@ import bcryptjs from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import env from '@/config/env.js'
 import models from '@/models/index.js'
+import emailService from '@/services/emailService.js'
 
 const { Usuario } = models
+
+function gerarCodigo6Digitos() {
+  return String(Math.floor(100000 + Math.random() * 900000))
+}
 
 class UsuarioService {
   gerarToken(usuario) {
@@ -23,16 +28,78 @@ class UsuarioService {
     }
 
     const senhaHash = await bcryptjs.hash(dados.Senha, 10)
+    const codigo = gerarCodigo6Digitos()
+    const expiracao = new Date(Date.now() + 15 * 60 * 1000)
 
-    const usuario = await Usuario.create({
+    await Usuario.create({
       ...dados,
-      Senha: senhaHash
+      Senha: senhaHash,
+      Codigo_Verificacao: codigo,
+      Codigo_Expiracao: expiracao,
+      Email_Verificado: false,
     })
 
-    const { Senha, ...usuarioSemSenha } = usuario.toJSON()
-    const token = this.gerarToken(usuario)
+    await emailService.enviarCodigoVerificacao(dados.Email, dados.Nome, codigo)
 
-    return { usuario: usuarioSemSenha, token }
+    return { requiresVerification: true, email: dados.Email }
+  }
+
+  async verificarEmail(email, codigo) {
+    const usuario = await Usuario.findOne({ where: { Email: email } })
+
+    if (!usuario) {
+      const error = new Error('Usuário não encontrado')
+      error.statusCode = 404
+      throw error
+    }
+
+    if (usuario.Email_Verificado) {
+      const { Senha, Codigo_Verificacao, Codigo_Expiracao, ...rest } = usuario.toJSON()
+      return { usuario: rest, token: this.gerarToken(usuario) }
+    }
+
+    if (!usuario.Codigo_Verificacao || usuario.Codigo_Verificacao !== codigo) {
+      const error = new Error('Código inválido')
+      error.statusCode = 400
+      throw error
+    }
+
+    if (new Date() > new Date(usuario.Codigo_Expiracao)) {
+      const error = new Error('Código expirado. Solicite um novo código.')
+      error.statusCode = 400
+      throw error
+    }
+
+    await usuario.update({
+      Email_Verificado: true,
+      Codigo_Verificacao: null,
+      Codigo_Expiracao: null,
+    })
+
+    const { Senha, Codigo_Verificacao, Codigo_Expiracao, ...usuarioSemSenha } = usuario.toJSON()
+    return { usuario: usuarioSemSenha, token: this.gerarToken(usuario) }
+  }
+
+  async reenviarCodigo(email) {
+    const usuario = await Usuario.findOne({ where: { Email: email } })
+
+    if (!usuario) {
+      return { mensagem: 'Se o e-mail estiver cadastrado, um novo código foi enviado.' }
+    }
+
+    if (usuario.Email_Verificado) {
+      const error = new Error('Este e-mail já foi verificado.')
+      error.statusCode = 400
+      throw error
+    }
+
+    const codigo = gerarCodigo6Digitos()
+    const expiracao = new Date(Date.now() + 15 * 60 * 1000)
+
+    await usuario.update({ Codigo_Verificacao: codigo, Codigo_Expiracao: expiracao })
+    await emailService.enviarCodigoVerificacao(usuario.Email, usuario.Nome, codigo)
+
+    return { mensagem: 'Novo código enviado para o seu e-mail.' }
   }
 
   async login(email, senha) {
@@ -51,15 +118,64 @@ class UsuarioService {
       throw error
     }
 
-    const { Senha, ...usuarioSemSenha } = usuario.toJSON()
-    const token = this.gerarToken(usuario)
+    if (!usuario.Email_Verificado) {
+      const error = new Error('E-mail não verificado. Verifique sua caixa de entrada.')
+      error.statusCode = 403
+      error.requiresVerification = true
+      error.email = usuario.Email
+      throw error
+    }
 
-    return { usuario: usuarioSemSenha, token }
+    const { Senha, Codigo_Verificacao, Codigo_Expiracao, ...usuarioSemSenha } = usuario.toJSON()
+    return { usuario: usuarioSemSenha, token: this.gerarToken(usuario) }
+  }
+
+  async esqueciSenha(email) {
+    const usuario = await Usuario.findOne({ where: { Email: email } })
+
+    if (!usuario) {
+      return { mensagem: 'Se o e-mail estiver cadastrado, um código foi enviado.' }
+    }
+
+    const codigo = gerarCodigo6Digitos()
+    const expiracao = new Date(Date.now() + 15 * 60 * 1000)
+
+    await usuario.update({ Codigo_Verificacao: codigo, Codigo_Expiracao: expiracao })
+    await emailService.enviarCodigoResetSenha(usuario.Email, usuario.Nome, codigo)
+
+    return { mensagem: 'Código enviado para o seu e-mail.' }
+  }
+
+  async resetarSenha(email, codigo, novaSenha) {
+    const usuario = await Usuario.findOne({ where: { Email: email } })
+
+    if (!usuario || !usuario.Codigo_Verificacao || usuario.Codigo_Verificacao !== codigo) {
+      const error = new Error('Código inválido')
+      error.statusCode = 400
+      throw error
+    }
+
+    if (new Date() > new Date(usuario.Codigo_Expiracao)) {
+      const error = new Error('Código expirado. Solicite um novo código.')
+      error.statusCode = 400
+      throw error
+    }
+
+    const senhaHash = await bcryptjs.hash(novaSenha, 10)
+
+    await usuario.update({
+      Senha: senhaHash,
+      Codigo_Verificacao: null,
+      Codigo_Expiracao: null,
+      Email_Verificado: true,
+    })
+
+    return { mensagem: 'Senha redefinida com sucesso.' }
   }
 
   async buscarPorId(id) {
     const usuario = await Usuario.findByPk(id, {
-      attributes: { exclude: ['Senha'] }
+      attributes: { exclude: ['Senha', 'Codigo_Verificacao', 'Codigo_Expiracao'] }
     })
 
     if (!usuario) {
@@ -73,7 +189,7 @@ class UsuarioService {
 
   async listarTodos() {
     const usuarios = await Usuario.findAll({
-      attributes: { exclude: ['Senha'] }
+      attributes: { exclude: ['Senha', 'Codigo_Verificacao', 'Codigo_Expiracao'] }
     })
     return usuarios
   }

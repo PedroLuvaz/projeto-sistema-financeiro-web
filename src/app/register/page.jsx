@@ -22,8 +22,12 @@ export default function Register() {
     if (senha.length < 6) { setError('Senha deve ter pelo menos 6 caracteres'); return }
     setLoading(true)
     try {
-      await register(nome, email, senha)
-      router.push('/')
+      const resultado = await register(nome, email, senha)
+      if (resultado?.requiresVerification) {
+        router.push(`/verificar-email?email=${encodeURIComponent(resultado.email)}`)
+      } else {
+        router.push('/')
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao criar conta')
     } finally {

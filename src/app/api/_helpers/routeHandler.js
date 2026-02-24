@@ -42,10 +42,12 @@ async function handleRequest(request, handler, { auth = true, adminOnly = false 
   } catch (error) {
     console.error('API Error:', error.message)
     const status = error.status || 500
-    return NextResponse.json(
-      { success: false, error: error.message || 'Erro interno do servidor' },
-      { status }
-    )
+    const body = { success: false, error: error.message || 'Erro interno do servidor' }
+    if (error.requiresVerification) {
+      body.requiresVerification = true
+      body.email = error.email
+    }
+    return NextResponse.json(body, { status })
   }
 }
 

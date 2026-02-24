@@ -23,7 +23,12 @@ export default function Login() {
       await login(email, senha)
       router.push('/')
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao fazer login')
+      const data = err.response?.data
+      if (data?.requiresVerification) {
+        router.push(`/verificar-email?email=${encodeURIComponent(data.email || email)}`)
+        return
+      }
+      setError(data?.error || 'Erro ao fazer login')
     } finally {
       setLoading(false)
     }
@@ -103,9 +108,15 @@ export default function Login() {
             </button>
           </form>
 
-          <div style={{ textAlign: 'center', marginTop: 20, fontSize: '.85rem', color: 'var(--color-text-muted)' }}>
+          <div style={{ textAlign: 'center', marginTop: 16, fontSize: '.85rem' }}>
+            <Link href="/esqueci-senha" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+              Esqueci minha senha
+            </Link>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 12, fontSize: '.85rem', color: 'var(--color-text-muted)' }}>
             Não tem conta?{' '}
-            <Link href="/register" style={{ color: 'var(--color-primary-light)', textDecoration: 'none', fontWeight: 600 }}>
+            <Link href="/register" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600 }}>
               Criar conta
             </Link>
           </div>
