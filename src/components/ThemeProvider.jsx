@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 
 export default function ThemeProvider({ children }) {
   const [theme, setTheme] = useState("light");
@@ -8,7 +9,6 @@ export default function ThemeProvider({ children }) {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
     const initialTheme = savedTheme || (systemPrefersDark ? "dark" : "light");
 
     setTheme(initialTheme);
@@ -24,35 +24,38 @@ export default function ThemeProvider({ children }) {
 
   return (
     <>
-      {/* Botão temporário fixo */}
       <button
-  onClick={toggleTheme}
-  style={{
-    position: "fixed",
-    bottom: 24,
-    right: 24,
-    width: 48,
-    height: 48,
-    borderRadius: "50%",
-    border: "1px solid var(--color-border)",
-    background: "var(--color-surface-2)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-    transition: "all 0.3s ease",
-    zIndex: 9999
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.transform = "scale(1.08)";
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.transform = "scale(1)";
-  }}
->
-  {theme === "dark" ? "🌞" : "🌙"}
-</button>
+        onClick={toggleTheme}
+        aria-label="Alternar tema"
+        title={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+        style={{
+          position: "fixed",
+          bottom: 22,
+          right: 22,
+          width: 46,
+          height: 46,
+          borderRadius: 14,
+          border: "1px solid var(--color-border)",
+          background: "var(--color-surface-elevated)",
+          backdropFilter: "blur(14px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--color-primary)",
+          cursor: "pointer",
+          boxShadow: "var(--shadow-sm)",
+          transition: "all .2s ease",
+          zIndex: 9999,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-2px)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
+      >
+        {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
 
       {children}
     </>

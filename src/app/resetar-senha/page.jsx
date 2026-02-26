@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import api from '@/services/api'
-import { Wallet, Lock, ArrowRight, Eye, EyeOff, RefreshCw } from 'lucide-react'
+import { Lock, ArrowRight, Eye, EyeOff, RefreshCw, KeyRound } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ResetarSenha() {
@@ -92,154 +92,149 @@ export default function ResetarSenha() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 60%), var(--color-surface)',
-      padding: 20,
-    }}>
-      <div style={{ width: '100%', maxWidth: 420 }}>
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+    <div style={{ minHeight: '100vh', padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="glass-card" style={{ width: '100%', maxWidth: 620, padding: '34px clamp(18px, 3vw, 34px)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 22 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: 16,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-            boxShadow: '0 8px 32px rgba(99,102,241,0.3)',
+            width: 54,
+            height: 54,
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 14,
+            boxShadow: '0 10px 26px rgba(79,70,229,.28)',
           }}>
-            <Lock size={28} color="#fff" />
+            <KeyRound size={25} color="#fff" />
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: 4 }}>
-            <span style={{ background: 'linear-gradient(135deg, #818cf8, #c4b5fd)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Nova senha
-            </span>
-          </h1>
+          <h1 style={{ fontSize: '1.45rem', fontWeight: 800, marginBottom: 5 }}>Definir nova senha</h1>
           <p style={{ color: 'var(--color-text-muted)', fontSize: '.9rem', lineHeight: 1.5 }}>
-            Digite o código enviado para<br />
-            <strong style={{ color: 'var(--color-text-secondary)' }}>{email}</strong>
+            Código enviado para <strong style={{ color: 'var(--color-text-secondary)' }}>{email}</strong>
           </p>
         </div>
 
-        <div className="glass-card" style={{ padding: 32 }}>
-          <form onSubmit={handleSubmit}>
-            {error && (
-              <div style={{
-                padding: '10px 14px', borderRadius: 10, marginBottom: 20,
-                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-                color: 'var(--color-danger)', fontSize: '.85rem',
-              }}>{error}</div>
-            )}
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div style={{
+              padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+              color: 'var(--color-danger)', fontSize: '.85rem',
+            }}>{error}</div>
+          )}
 
-            {reenvioMsg && (
-              <div style={{
-                padding: '10px 14px', borderRadius: 10, marginBottom: 20,
-                background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-                color: 'var(--color-primary)', fontSize: '.85rem',
-              }}>{reenvioMsg}</div>
-            )}
+          {reenvioMsg && (
+            <div style={{
+              padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+              background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+              color: 'var(--color-primary)', fontSize: '.85rem',
+            }}>{reenvioMsg}</div>
+          )}
 
-            <label className="input-label" style={{ display: 'block', marginBottom: 14 }}>
-              Código de verificação
-            </label>
+          <label className="input-label" style={{ display: 'block', marginBottom: 12 }}>
+            Código de verificação
+          </label>
 
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24 }} onPaste={handlePaste}>
-              {digitos.map((d, i) => (
-                <input
-                  key={i}
-                  ref={el => refs.current[i] = el}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={d}
-                  onChange={e => handleDigito(i, e.target.value)}
-                  onKeyDown={e => handleKeyDown(i, e)}
-                  style={{
-                    width: 48, height: 56, textAlign: 'center',
-                    fontSize: '1.5rem', fontWeight: 700,
-                    background: 'var(--color-surface-3)',
-                    border: `2px solid ${d ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                    borderRadius: 12, color: 'var(--color-text)',
-                    outline: 'none', transition: 'border-color .15s',
-                    caretColor: 'var(--color-primary)',
-                  }}
-                />
-              ))}
-            </div>
-
-            <div style={{ marginBottom: 18 }}>
-              <label className="input-label">Nova senha</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
-                <input
-                  className="input-field"
-                  style={{ paddingLeft: 42, paddingRight: 42 }}
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="Mínimo 6 caracteres"
-                  value={novaSenha}
-                  onChange={e => setNovaSenha(e.target.value)}
-                  required minLength={6}
-                />
-                <button type="button" onClick={() => setShowPwd(!showPwd)} style={{
-                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer',
-                }}>
-                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <label className="input-label">Confirmar nova senha</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
-                <input
-                  className="input-field"
-                  style={{ paddingLeft: 42, paddingRight: 42 }}
-                  type={showConfirm ? 'text' : 'password'}
-                  placeholder="Repita a senha"
-                  value={confirmarSenha}
-                  onChange={e => setConfirmarSenha(e.target.value)}
-                  required
-                />
-                <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{
-                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer',
-                }}>
-                  {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              className="btn-primary"
-              type="submit"
-              disabled={loading}
-              style={{ width: '100%', justifyContent: 'center', padding: '14px 24px', fontSize: '.95rem' }}
-            >
-              {loading ? 'Salvando...' : 'Redefinir senha'}
-              {!loading && <ArrowRight size={18} />}
-            </button>
-          </form>
-
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <button
-              onClick={handleReenviar}
-              disabled={reenvioLoading || cooldown > 0}
-              style={{
-                background: 'none', border: 'none', cursor: cooldown > 0 ? 'default' : 'pointer',
-                color: cooldown > 0 ? 'var(--color-text-muted)' : 'var(--color-primary)',
-                fontSize: '.85rem', fontWeight: 500,
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-              }}
-            >
-              <RefreshCw size={14} />
-              {reenvioLoading ? 'Enviando...' : cooldown > 0 ? `Reenviar em ${cooldown}s` : 'Reenviar código'}
-            </button>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 22 }} onPaste={handlePaste}>
+            {digitos.map((d, i) => (
+              <input
+                key={i}
+                ref={el => refs.current[i] = el}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={d}
+                onChange={e => handleDigito(i, e.target.value)}
+                onKeyDown={e => handleKeyDown(i, e)}
+                style={{
+                  width: 48,
+                  height: 54,
+                  textAlign: 'center',
+                  fontSize: '1.35rem',
+                  fontWeight: 700,
+                  background: 'var(--color-surface-3)',
+                  border: `2px solid ${d ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                  borderRadius: 12,
+                  color: 'var(--color-text)',
+                  outline: 'none',
+                  transition: 'border-color .15s',
+                  caretColor: 'var(--color-primary)',
+                }}
+              />
+            ))}
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: 8, fontSize: '.85rem', color: 'var(--color-text-muted)' }}>
-            <Link href="/login" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
-              ← Voltar ao login
-            </Link>
+          <div style={{ marginBottom: 14 }}>
+            <label className="input-label">Nova senha</label>
+            <div style={{ position: 'relative' }}>
+              <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+              <input
+                className="input-field"
+                style={{ paddingLeft: 42, paddingRight: 42 }}
+                type={showPwd ? 'text' : 'password'}
+                placeholder="Mínimo 6 caracteres"
+                value={novaSenha}
+                onChange={e => setNovaSenha(e.target.value)}
+                required
+                minLength={6}
+              />
+              <button type="button" onClick={() => setShowPwd(!showPwd)} style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer',
+              }}>
+                {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
+
+          <div style={{ marginBottom: 22 }}>
+            <label className="input-label">Confirmar nova senha</label>
+            <div style={{ position: 'relative' }}>
+              <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+              <input
+                className="input-field"
+                style={{ paddingLeft: 42, paddingRight: 42 }}
+                type={showConfirm ? 'text' : 'password'}
+                placeholder="Repita a senha"
+                value={confirmarSenha}
+                onChange={e => setConfirmarSenha(e.target.value)}
+                required
+              />
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer',
+              }}>
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center', padding: '13px 22px', fontSize: '.95rem' }}>
+            {loading ? 'Salvando...' : 'Redefinir senha'}
+            {!loading && <ArrowRight size={18} />}
+          </button>
+        </form>
+
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <button
+            onClick={handleReenviar}
+            disabled={reenvioLoading || cooldown > 0}
+            style={{
+              background: 'none', border: 'none', cursor: cooldown > 0 ? 'default' : 'pointer',
+              color: cooldown > 0 ? 'var(--color-text-muted)' : 'var(--color-primary)',
+              fontSize: '.85rem', fontWeight: 600,
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <RefreshCw size={14} />
+            {reenvioLoading ? 'Enviando...' : cooldown > 0 ? `Reenviar em ${cooldown}s` : 'Reenviar código'}
+          </button>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 8, fontSize: '.85rem', color: 'var(--color-text-muted)' }}>
+          <Link href="/login" style={{ color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+            ← Voltar ao login
+          </Link>
         </div>
       </div>
     </div>

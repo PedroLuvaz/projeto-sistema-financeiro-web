@@ -1,53 +1,55 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --color-primary: #4f46e5;
+    --color-primary-hover: #4338ca;
+    --color-primary-dark: #3730a3;
+    --color-primary-light: #818cf8;
+    --color-accent: #06b6d4;
 
-:root {
-  --color-primary: #059669; 
-  --color-primary-hover: #047857;
-  
-  /* Cor específica para o Logo (Gradiente moderno) */
-  --logo-gradient-1: #10b981;
-  --logo-gradient-2: #059669;
-  /* Verde esmeralda mais vibrante */
-  
-  --color-accent: #6366f1; /* Indigo traz um ar mais 'Premium' que o azul céu */
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
 
-  /* Background e superfícies */
-  --color-surface: #f1f5f9;    /* Fundo geral mais frio */
-  --color-surface-2: #ffffff;  /* Cards brancos puros */
-  --color-surface-3: #f8fafc;  /* Inputs ou áreas de destaque */
+    --color-surface: #f6f8ff;
+    --color-surface-2: #ffffff;
+    --color-surface-3: #eef2ff;
+    --color-surface-elevated: rgba(255, 255, 255, 0.72);
+    --color-border: #dbe2ff;
 
-  --color-border: #e2e8f0;
+    --color-text: #0f172a;
+    --color-text-secondary: #334155;
+    --color-text-muted: #64748b;
 
-  /* Tipografia com mais hierarquia */
-  --color-text: #0f172a;           /* Quase preto */
-  --color-text-secondary: #475569;  /* Cinza médio */
-  --color-text-muted: #94a3b8;      /* Cinza claro */
+    --shadow-sm: 0 6px 20px rgba(79, 70, 229, 0.08);
+    --shadow-md: 0 18px 45px rgba(79, 70, 229, 0.14);
+  }
 
-  --color-primary-dark: #047857;
-}
+  .dark {
+    --color-primary: #818cf8;
+    --color-primary-hover: #6366f1;
+    --color-primary-dark: #4f46e5;
+    --color-primary-light: #a5b4fc;
+    --color-accent: #22d3ee;
 
-.dark {
-  --color-primary: #34d399;
-  --color-primary-hover: #10b981;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-danger: #fb7185;
 
+    --color-surface: #020617;
+    --color-surface-2: #0b1122;
+    --color-surface-3: #111a32;
+    --color-surface-elevated: rgba(10, 16, 33, 0.74);
+    --color-border: #1f2a44;
 
-  --color-accent: #818cf8;
+    --color-text: #e5e7eb;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #94a3b8;
 
-  /* Superfícies com profundidade */
-  --color-surface: #020617;    /* Azul marinho quase preto */
-  --color-surface-2: #0f172a;  /* Card um tom acima */
-  --color-surface-3: #1e293b;  /* Hover ou inputs */
-
-  --color-border: #1e293b;
-
-  --color-text: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-muted: #64748b;
-
-  --color-primary-dark: #059669;
-}
+    --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.28);
+    --shadow-md: 0 20px 48px rgba(0, 0, 0, 0.38);
+  }
 
   * {
     margin: 0;
@@ -55,17 +57,29 @@
     box-sizing: border-box;
   }
 
+  html,
+  body {
+    min-height: 100%;
+  }
+
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: var(--color-surface);
+    background:
+      radial-gradient(1200px 500px at 12% -20%, rgba(79, 70, 229, 0.18), transparent 65%),
+      radial-gradient(1000px 420px at 92% -30%, rgba(6, 182, 212, 0.16), transparent 72%),
+      var(--color-surface);
     color: var(--color-text);
     -webkit-font-smoothing: antialiased;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
+  a {
+    color: inherit;
+  }
+
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 9px;
+    height: 9px;
   }
 
   ::-webkit-scrollbar-track {
@@ -73,145 +87,163 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-surface-3);
-    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-primary) 40%, var(--color-surface-3));
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-muted);
+    background: color-mix(in srgb, var(--color-primary) 64%, var(--color-surface-3));
+    background-clip: content-box;
   }
 }
 
 @layer components {
-
-  /* ========================
-     CARDS
-  ======================== */
-
   .glass-card,
   .stat-card {
-    background: var(--color-surface-2);
+    background: var(--color-surface-elevated);
     border: 1px solid var(--color-border);
-    border-radius: 20px; /* Bordas um pouco mais arredondadas dão ar moderno */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(14px);
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .glass-card {
     padding: 24px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .glass-card:hover,
   .stat-card:hover {
-    transform: translateY(-2px); /* Efeito de levitação */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+    box-shadow: var(--shadow-md);
   }
 
-  /* ========================
-     BOTÕES
-  ======================== */
+  .stat-card {
+    padding: 20px;
+  }
+
+  .stat-card-emerald { border-color: color-mix(in srgb, var(--color-success) 45%, var(--color-border)); }
+  .stat-card-rose { border-color: color-mix(in srgb, var(--color-danger) 40%, var(--color-border)); }
+  .stat-card-indigo { border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border)); }
+  .stat-card-cyan { border-color: color-mix(in srgb, var(--color-accent) 50%, var(--color-border)); }
+  .stat-card-violet { border-color: color-mix(in srgb, #a855f7 42%, var(--color-border)); }
+  .stat-card-amber { border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-border)); }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-icon {
+    transition: all .2s ease;
+  }
 
   .btn-primary {
-    background: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 78%, var(--color-accent)));
     color: #fff;
-    padding: 10px 24px;
+    padding: 10px 22px;
     border-radius: 12px;
     font-weight: 600;
     font-size: .875rem;
-    border: none;
+    border: 1px solid transparent;
     cursor: pointer;
-    transition: all .2s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    box-shadow: 0 10px 22px rgba(79, 70, 229, 0.24);
   }
 
   .btn-primary:hover {
-    background: var(--color-primary-dark);
+    transform: translateY(-1px);
+    filter: brightness(1.05);
   }
 
-  .btn-primary:disabled {
-    opacity: .5;
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-danger:disabled,
+  .btn-icon:disabled {
+    opacity: .55;
     cursor: not-allowed;
+    transform: none;
   }
 
   .btn-secondary {
-    background: var(--color-surface-3); 
+    background: color-mix(in srgb, var(--color-surface-3) 80%, transparent);
     color: var(--color-text);
-    padding: 10px 24px;
+    padding: 10px 22px;
     border-radius: 12px;
     font-weight: 600;
     font-size: .875rem;
     border: 1px solid var(--color-border);
     cursor: pointer;
-    transition: all .2s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
   }
 
   .btn-secondary:hover {
-    background: var(--color-border); 
-    color: var(--color-primary); 
-    border-color: var(--color-primary);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+    color: var(--color-primary);
   }
 
   .btn-danger {
-    background: var(--color-danger);
+    background: linear-gradient(135deg, var(--color-danger), color-mix(in srgb, var(--color-danger) 72%, #be123c));
     color: #fff;
-    padding: 10px 24px;
+    padding: 10px 22px;
     border-radius: 12px;
     font-weight: 600;
     font-size: .875rem;
     border: none;
     cursor: pointer;
-    transition: all .2s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.28);
   }
 
   .btn-danger:hover {
-    background: #b91c1c;
+    filter: brightness(1.05);
   }
 
   .btn-icon {
-    background: transparent;
+    background: color-mix(in srgb, var(--color-surface-2) 85%, transparent);
     border: 1px solid var(--color-border);
     color: var(--color-text-secondary);
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all .2s;
   }
 
   .btn-icon:hover {
-    background: var(--color-surface-3);
-    color: var(--color-text);
-    border-color: var(--color-primary);
+    color: var(--color-primary);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+    transform: translateY(-1px);
   }
-
-  /* ========================
-     INPUTS
-  ======================== */
 
   .input-field {
     width: 100%;
-    padding: 12px 16px;
-    background: var(--color-surface-2);
+    padding: 12px 14px;
+    background: color-mix(in srgb, var(--color-surface-2) 85%, transparent);
     border: 1px solid var(--color-border);
     border-radius: 12px;
     color: var(--color-text);
     font-size: .875rem;
-    transition: all .2s;
+    transition: all .2s ease;
     outline: none;
   }
 
+  .input-field:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 25%, var(--color-border));
+  }
+
   .input-field:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    border-color: color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
   }
 
   .input-field::placeholder {
@@ -221,55 +253,64 @@
   .input-label {
     display: block;
     font-size: .8125rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-text-secondary);
-    margin-bottom: 6px;
+    margin-bottom: 7px;
   }
-
-  /* ========================
-     BADGES
-  ======================== */
 
   .badge {
     display: inline-flex;
     align-items: center;
+    gap: 4px;
     padding: 4px 10px;
-    border-radius: 8px;
-    font-size: .75rem;
-    font-weight: 600;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 700;
+    border: 1px solid transparent;
   }
 
   .badge-primary {
-    background: rgba(79, 70, 229, 0.1);
-    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+    color: var(--color-primary-light);
   }
 
   .badge-success {
-    background: rgba(22, 163, 74, 0.1);
+    background: color-mix(in srgb, var(--color-success) 14%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
     color: var(--color-success);
   }
 
   .badge-warning {
-    background: rgba(217, 119, 6, 0.1);
+    background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+    border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
     color: var(--color-warning);
   }
 
   .badge-danger {
-    background: rgba(220, 38, 38, 0.1);
+    background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+    border-color: color-mix(in srgb, var(--color-danger) 35%, transparent);
     color: var(--color-danger);
   }
 
   .badge-default {
-    background: rgba(156, 163, 175, 0.12);
+    background: color-mix(in srgb, var(--color-text-muted) 14%, transparent);
+    border-color: color-mix(in srgb, var(--color-text-muted) 30%, transparent);
     color: var(--color-text-secondary);
   }
 
-  /* ========================
-     TABELAS
-  ======================== */
+  .badge-info {
+    background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+    color: var(--color-accent);
+  }
 
   .table-container {
     overflow-x: auto;
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
   }
 
   .table-container table {
@@ -279,53 +320,93 @@
 
   .table-container th {
     text-align: left;
-    padding: 12px 16px;
+    padding: 13px 16px;
     font-size: .75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: .05em;
+    letter-spacing: .06em;
     color: var(--color-text-muted);
     border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
   }
 
   .table-container td {
     padding: 14px 16px;
     font-size: .875rem;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
     color: var(--color-text-secondary);
+    vertical-align: middle;
+  }
+
+  .table-container tr:last-child td {
+    border-bottom: none;
   }
 
   .table-container tr:hover td {
-    background: var(--color-surface-3);
+    background: color-mix(in srgb, var(--color-surface-3) 65%, transparent);
     color: var(--color-text);
   }
-
 
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(17, 24, 39, 0.25);
-    backdrop-filter: blur(2px);
+    background: rgba(2, 6, 23, 0.55);
+    backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 50;
+    z-index: 60;
+    padding: 18px;
   }
 
   .modal-content {
-    background: var(--color-surface-2);
+    background: var(--color-surface-elevated);
     border: 1px solid var(--color-border);
-    border-radius: 20px;
-    padding: 28px;
+    border-radius: 18px;
+    box-shadow: var(--shadow-md);
+    padding: 24px;
     width: 100%;
-    max-width: 480px;
-    max-height: 90vh;
+    max-width: 500px;
+    max-height: 92vh;
     overflow-y: auto;
+    backdrop-filter: blur(16px);
   }
 
+  .sidebar-item.active {
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 13%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
 }
 
-.sidebar-item.active {
-  background: rgba(79, 70, 229, 0.08);
-  color: var(--color-primary);
+@layer utilities {
+  .fade-in {
+    animation: fadeIn .35s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% { opacity: 0.65; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 960px) {
+    .table-container th,
+    .table-container td {
+      padding: 12px;
+    }
+
+    .glass-card,
+    .stat-card {
+      border-radius: 14px;
+    }
+  }
 }

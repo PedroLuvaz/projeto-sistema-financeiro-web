@@ -14,12 +14,21 @@ export default function MonthSelector({ mes, ano, onChange }) {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <button className="btn-icon" onClick={prev}><ChevronLeft size={18} /></button>
-      <span style={{ fontWeight: 600, fontSize: '1rem', minWidth: 160, textAlign: 'center' }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      border: '1px solid var(--color-border)',
+      background: 'var(--color-surface-elevated)',
+      borderRadius: 12,
+      padding: '4px 6px',
+      backdropFilter: 'blur(8px)',
+    }}>
+      <button className="btn-icon" onClick={prev} style={{ width: 30, height: 30 }}><ChevronLeft size={16} /></button>
+      <span style={{ fontWeight: 700, fontSize: '.9rem', minWidth: 148, textAlign: 'center' }}>
         {getMonthName(mes)} {ano}
       </span>
-      <button className="btn-icon" onClick={next}><ChevronRight size={18} /></button>
+      <button className="btn-icon" onClick={next} style={{ width: 30, height: 30 }}><ChevronRight size={16} /></button>
     </div>
   )
 }
