@@ -191,18 +191,18 @@ class ImportacaoService {
       })
     }
 
-    // Agrupa parcelamentos pelo descricaoBase normalizado
+    // Agrupa parcelamentos pelo descricaoBase normalizado + total de parcelas
+    // (ex: "Amazon 6/10" e "Amazon 2/6" são compras diferentes → chaves diferentes)
     const grupos = {}
     for (const t of transacoes) {
       if (!t.parcela) continue
-      const chave = normalizarDesc(t.parcela.descBase)
+      const chave = `${normalizarDesc(t.parcela.descBase)}__${t.parcela.total}`
       if (!grupos[chave]) {
         grupos[chave] = {
           chave,
           descricao:  t.parcela.descBase,
           categoria:  t.categoria,
           valorParcela: t.valor,
-          total:      t.parcelas,
           parcelas: [],
           dataBase:   t.data,  // data da parcela detectada no CSV
           parcelaAtual: t.parcela.atual,
@@ -239,14 +239,18 @@ class ImportacaoService {
     if (!conta) throw Object.assign(new Error('Conta não encontrada'), { statusCode: 404 })
 
     const transaction = await sequelize.transaction()
-    const resultado = { parcelamentosCriados: 0, despesasCriadas: 0, despesasAvulsas: 0 }
+    const resultado = {
+      parcelamentosCriados: 0,
+      despesasCriadas: 0,
+      despesasAvulsas: 0,
+      // IDs para desfazer
+      idsParcelamentos: [],
+      idsDespesasAvulsas: [],
+    }
 
     try {
       // 1. Cria todos os parcelamentos detectados (todas as parcelas, passado e futuro)
-      const parcChaveParaId = {}
       for (const g of grupos) {
-        const chave = normalizarDesc(g.descricao)
-
         const idParc = randomUUID()
         await ParcelamentoAgrupador.create({
           Id_Parcelamento: idParc,
@@ -275,14 +279,15 @@ class ImportacaoService {
           resultado.despesasCriadas++
         }
         resultado.parcelamentosCriados++
-        parcChaveParaId[chave] = idParc
+        resultado.idsParcelamentos.push(idParc)
       }
 
       // 2. Cria despesas avulsas (sem parcela)
       const avulsas = transacoes.filter(t => !t.ehParcelamento)
       for (const t of avulsas) {
+        const idDespesa = randomUUID()
         await Despesa.create({
-          Id_Despesa:       randomUUID(),
+          Id_Despesa:       idDespesa,
           Id_Usuario:       idUsuario,
           Id_Conta:         idConta,
           Descricao_Despesa: t.descricao,
@@ -293,10 +298,38 @@ class ImportacaoService {
         }, { transaction })
         resultado.despesasAvulsas++
         resultado.despesasCriadas++
+        resultado.idsDespesasAvulsas.push(idDespesa)
       }
 
       await transaction.commit()
       return resultado
+    } catch (err) {
+      await transaction.rollback()
+      throw err
+    }
+  }
+
+  // Desfaz uma importação: deleta os parcelamentos (cascade para despesas) e despesas avulsas
+  async desfazerImportacao({ idUsuario, idsParcelamentos, idsDespesasAvulsas }) {
+    const { Op } = await import('sequelize')
+    const transaction = await sequelize.transaction()
+    try {
+      // Deletar parcelamentos (cascade deleta as despesas filhas)
+      if (idsParcelamentos?.length) {
+        await ParcelamentoAgrupador.destroy({
+          where: { Id_Parcelamento: { [Op.in]: idsParcelamentos }, Id_Usuario: idUsuario },
+          transaction,
+        })
+      }
+      // Deletar despesas avulsas
+      if (idsDespesasAvulsas?.length) {
+        await Despesa.destroy({
+          where: { Id_Despesa: { [Op.in]: idsDespesasAvulsas }, Id_Usuario: idUsuario },
+          transaction,
+        })
+      }
+      await transaction.commit()
+      return { mensagem: 'Importação desfeita com sucesso' }
     } catch (err) {
       await transaction.rollback()
       throw err
