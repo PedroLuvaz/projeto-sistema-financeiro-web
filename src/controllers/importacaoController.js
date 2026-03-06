@@ -39,6 +39,19 @@ class ImportacaoController {
     })
     return { status: 201, data: resultado }
   }
+
+  async desfazer(body, idUsuario) {
+    const { idsParcelamentos, idsDespesasAvulsas } = body
+    if (!idsParcelamentos?.length && !idsDespesasAvulsas?.length) {
+      return { status: 400, error: 'Nenhum ID informado para desfazer' }
+    }
+    const resultado = await importacaoService.desfazerImportacao({
+      idUsuario,
+      idsParcelamentos: idsParcelamentos || [],
+      idsDespesasAvulsas: idsDespesasAvulsas || [],
+    })
+    return { status: 200, data: resultado }
+  }
 }
 
 export default new ImportacaoController()

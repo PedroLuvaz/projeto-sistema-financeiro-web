@@ -454,6 +454,18 @@ function Step3Revisao({ data, onNext, onBack }) {
         </div>
       )}
 
+      {/* Total geral */}
+      {transacoes.length > 0 && (
+        <div style={{ ...S.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.2)' }}>
+          <span style={{ fontSize: '.875rem', color: 'var(--color-text-secondary)' }}>
+            Total desta fatura ({transacoes.length} itens)
+          </span>
+          <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+            {formatCurrency(transacoes.reduce((s, t) => s + t.valor, 0))}
+          </span>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <button onClick={onBack} style={S.btnSecondary}>
           <ChevronLeft size={16} /> Voltar
@@ -501,7 +513,7 @@ function Step4Confirmar({ data, onBack, contas, onSuccess }) {
     <div>
       <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 8 }}>Confirmar importação</h2>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '.875rem', marginBottom: 24 }}>
-        Selecione a conta/cartão e confirme. Esta ação não pode ser desfeita facilmente.
+        Selecione a conta/cartão e confirme. Você poderá desfazer após importar se necessário.
       </p>
 
       <div style={{ marginBottom: 20, maxWidth: 380 }}>
@@ -550,6 +562,39 @@ function Step4Confirmar({ data, onBack, contas, onSuccess }) {
 
 // ── Tela de Sucesso ────────────────────────────────────────────────────────────
 function Sucesso({ resultado, onReset, router }) {
+  const [desfazendo, setDesfazendo] = useState(false)
+  const [desfeito, setDesfeito] = useState(false)
+  const [errDesfazer, setErrDesfazer] = useState('')
+
+  const handleDesfazer = async () => {
+    if (!confirm('Tem certeza? Isso irá remover todos os parcelamentos e despesas criados nesta importação.')) return
+    setDesfazendo(true)
+    setErrDesfazer('')
+    try {
+      await api.post('/importar-csv/desfazer', {
+        idsParcelamentos: resultado.idsParcelamentos,
+        idsDespesasAvulsas: resultado.idsDespesasAvulsas,
+      })
+      setDesfeito(true)
+    } catch (err) {
+      setErrDesfazer(err.response?.data?.error || 'Erro ao desfazer')
+    }
+    setDesfazendo(false)
+  }
+
+  if (desfeito) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <X size={64} color="#ef4444" style={{ marginBottom: 20 }} />
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 8 }}>Importação desfeita</h2>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '.9375rem', marginBottom: 32 }}>
+          Todos os dados criados pela importação foram removidos.
+        </p>
+        <button onClick={onReset} style={S.btnPrimary}>Importar novamente</button>
+      </div>
+    )
+  }
+
   return (
     <div style={{ textAlign: 'center', padding: '40px 0' }}>
       <CheckCircle size={64} color="var(--color-primary)" style={{ marginBottom: 20 }} />
@@ -569,7 +614,23 @@ function Sucesso({ resultado, onReset, router }) {
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 32 }}>
+
+      {errDesfazer && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#ef4444', fontSize: '.875rem', marginTop: 16 }}>
+          <AlertCircle size={16} /> {errDesfazer}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
+        <button onClick={handleDesfazer} disabled={desfazendo} style={{
+          ...S.btnSecondary,
+          color: '#ef4444',
+          borderColor: '#ef4444',
+          opacity: desfazendo ? 0.6 : 1,
+        }}>
+          {desfazendo ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={16} />}
+          {desfazendo ? 'Desfazendo...' : 'Desfazer importação'}
+        </button>
         <button onClick={onReset} style={S.btnSecondary}>
           Importar outro arquivo
         </button>
