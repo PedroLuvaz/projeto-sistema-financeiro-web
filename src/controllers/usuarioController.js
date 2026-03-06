@@ -25,7 +25,8 @@ class UsuarioController {
   }
 
   async login(body) {
-    const { Email, Senha } = body
+    const Email = body.Email || body.email
+    const Senha = body.Senha || body.senha
     if (!Email || !Senha) {
       return { status: 400, error: 'Email e senha são obrigatórios' }
     }

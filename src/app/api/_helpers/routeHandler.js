@@ -41,7 +41,7 @@ async function handleRequest(request, handler, { auth = true, adminOnly = false 
     )
   } catch (error) {
     console.error('API Error:', error.message)
-    const status = error.status || 500
+    const status = error.status || error.statusCode || 500
     const body = { success: false, error: error.message || 'Erro interno do servidor' }
     if (error.requiresVerification) {
       body.requiresVerification = true
