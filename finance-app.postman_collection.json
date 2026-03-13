@@ -1,0 +1,1598 @@
+{
+	"info": {
+		"_postman_id": "finance-app-collection-2026",
+		"name": "Finance App",
+		"description": "# Finance App API\n\nDocumentação completa da API do Sistema Financeiro Web.\n\n## Base URL\n`http://localhost:3000`\n\n## Autenticação\nA maioria dos endpoints requer um JWT no header:\n```\nAuthorization: Bearer <token>\n```\nO token é obtido via **Login** ou **Registrar**. Os scripts de teste salvam automaticamente o token na variável `{{token}}`.\n\n## Formato Padrão de Resposta\nTodas as respostas seguem o padrão:\n```json\n{ \"success\": true, \"data\": { ... } }\n{ \"success\": false, \"error\": \"mensagem de erro\" }\n```\n\n## Variáveis da Coleção\n| Variável | Descrição |\n|---|---|\n| `baseUrl` | URL base (default: http://localhost:3000) |\n| `token` | JWT token — preenchido automaticamente no login |\n| `userId` | ID do usuário logado — preenchido automaticamente |\n| `contaId` | ID de uma conta/cartão |\n| `despesaId` | ID de uma despesa |\n| `rendaId` | ID de uma renda |\n| `parcelamentoId` | ID de um parcelamento |\n| `reservaId` | ID de uma reserva |\n| `membroId` | ID de um membro da família |\n\n## Tipos de Conta\n- `Corrente` — Conta corrente bancária\n- `Crédito` — Cartão de crédito\n- `Dinheiro` — Dinheiro em espécie\n\n## Categorias de Despesa\n`Alimentação` · `Transporte` · `Moradia` · `Saúde` · `Educação` · `Entretenimento` · `Eletrônicos` · `Roupas` · `Contas` · `Outros`\n\n## Cargos de Usuário\n- `usuario` — Usuário padrão (default)\n- `admin` — Administrador",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+		{ "key": "token", "value": "", "type": "string" },
+		{ "key": "userId", "value": "", "type": "string" },
+		{ "key": "contaId", "value": "", "type": "string" },
+		{ "key": "despesaId", "value": "", "type": "string" },
+		{ "key": "rendaId", "value": "", "type": "string" },
+		{ "key": "parcelamentoId", "value": "", "type": "string" },
+		{ "key": "reservaId", "value": "", "type": "string" },
+		{ "key": "membroId", "value": "", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "🩺 Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api", "health"] },
+						"description": "Verifica se a API e o banco de dados estão operacionais.\n\n**Não requer autenticação.**"
+					},
+					"response": [
+						{
+							"name": "API OK",
+							"status": "OK", "code": 200,
+							"header": [{ "key": "Content-Type", "value": "application/json" }],
+							"body": "{\n  \"success\": true,\n  \"message\": \"API e banco funcionando normalmente.\",\n  \"database\": \"up\",\n  \"timestamp\": \"2026-03-13T12:00:00.000Z\"\n}"
+						},
+						{
+							"name": "Banco Indisponível",
+							"status": "Internal Server Error", "code": 500,
+							"header": [{ "key": "Content-Type", "value": "application/json" }],
+							"body": "{\n  \"success\": false,\n  \"message\": \"Erro ao conectar ao banco.\",\n  \"database\": \"down\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🔐 Autenticação",
+			"description": "Endpoints públicos de autenticação — nenhum requer token.\n\n**Fluxo recomendado:**\n1. `Registrar` → recebe `requiresVerification: true`\n2. `Verificar Email` → recebe token JWT\n3. `Login` → recebe token JWT\n\n**Recuperação de senha:**\n1. `Esqueci a Senha` → envia código por email\n2. `Resetar Senha` → define nova senha com o código",
+			"item": [
+				{
+					"name": "Registrar Usuário",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 201 && res.data) {",
+									"    if (res.data.token) pm.collectionVariables.set('token', res.data.token);",
+									"    if (res.data.usuario?.Id_Usuario) pm.collectionVariables.set('userId', res.data.usuario.Id_Usuario);",
+									"    console.log('Token salvo:', res.data.token ? 'sim' : 'não');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Nome\": \"João Silva\",\n  \"Email\": \"joao@email.com\",\n  \"Senha\": \"senha123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/usuarios/registrar", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "registrar"] },
+						"description": "Registra um novo usuário. Após o registro, um código de 6 dígitos é enviado ao email para verificação.\n\n**Campos obrigatórios:**\n| Campo | Tipo | Descrição |\n|---|---|---|\n| `Nome` | string | Nome completo |\n| `Email` | string | Email único e válido |\n| `Senha` | string | Mínimo 6 caracteres |\n\n**Resposta:** retorna `requiresVerification: true` — o usuário deve verificar o email antes de usar a API."
+					},
+					"response": [
+						{
+							"name": "Registro iniciado — verificação pendente",
+							"status": "Created", "code": 201,
+							"header": [{ "key": "Content-Type", "value": "application/json" }],
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"requiresVerification\": true,\n    \"email\": \"joao@email.com\"\n  }\n}"
+						},
+						{
+							"name": "Email já cadastrado",
+							"status": "Conflict", "code": 409,
+							"header": [{ "key": "Content-Type", "value": "application/json" }],
+							"body": "{\n  \"success\": false,\n  \"error\": \"Email já cadastrado\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Verificar Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 200 && res.data) {",
+									"    if (res.data.token) pm.collectionVariables.set('token', res.data.token);",
+									"    if (res.data.usuario?.Id_Usuario) pm.collectionVariables.set('userId', res.data.usuario.Id_Usuario);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"joao@email.com\",\n  \"codigo\": \"123456\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/usuarios/verificar-email", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "verificar-email"] },
+						"description": "Verifica o email do usuário com o código de 6 dígitos recebido. Ao verificar com sucesso, retorna o token JWT.\n\n**Campos obrigatórios:**\n| Campo | Tipo | Descrição |\n|---|---|---|\n| `email` | string | Email do usuário |\n| `codigo` | string | Código de 6 dígitos recebido por email |\n\n**Erros possíveis:** código inválido, código expirado, usuário não encontrado."
+					},
+					"response": [
+						{
+							"name": "Email verificado — login automático",
+							"status": "OK", "code": 200,
+							"header": [{ "key": "Content-Type", "value": "application/json" }],
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"usuario\": {\n      \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"Nome\": \"João Silva\",\n      \"Email\": \"joao@email.com\",\n      \"Cargo\": \"usuario\",\n      \"Email_Verificado\": true,\n      \"Data_Criacao\": \"2026-03-13\"\n    },\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+						},
+						{
+							"name": "Código inválido",
+							"status": "Bad Request", "code": 400,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Código inválido\"\n}"
+						},
+						{
+							"name": "Código expirado",
+							"status": "Bad Request", "code": 400,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Código expirado. Solicite um novo código.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Reenviar Código de Verificação",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"joao@email.com\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/usuarios/reenviar-codigo", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "reenviar-codigo"] },
+						"description": "Reenvia o código de verificação de email. Útil se o código anterior expirou (validade: 15 minutos).\n\n**Nota de segurança:** emails não cadastrados retornam mensagem de sucesso genérica para evitar enumeração de emails."
+					},
+					"response": [
+						{
+							"name": "Código reenviado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Novo código enviado para o seu e-mail.\"\n  }\n}"
+						},
+						{
+							"name": "Email já verificado",
+							"status": "Bad Request", "code": 400,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Este e-mail já foi verificado.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 200 && res.data) {",
+									"    if (res.data.token) pm.collectionVariables.set('token', res.data.token);",
+									"    if (res.data.usuario?.Id_Usuario) pm.collectionVariables.set('userId', res.data.usuario.Id_Usuario);",
+									"    console.log('Logado como:', res.data.usuario?.Email, '| Cargo:', res.data.usuario?.Cargo);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"joao@email.com\",\n  \"senha\": \"senha123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/usuarios/login", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "login"] },
+						"description": "Autentica o usuário e retorna o JWT. O script de teste salva automaticamente `{{token}}` e `{{userId}}`.\n\n**Campos:** aceita tanto camelCase (`email`, `senha`) quanto PascalCase (`Email`, `Senha`).\n\n**Token JWT:** expira em 7 dias (configurável via `JWT_EXPIRES_IN`).\n\n**Retorna 403** se o email ainda não foi verificado, com `requiresVerification: true`."
+					},
+					"response": [
+						{
+							"name": "Login bem-sucedido",
+							"status": "OK", "code": 200,
+							"header": [{ "key": "Content-Type", "value": "application/json" }],
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"usuario\": {\n      \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"Nome\": \"João Silva\",\n      \"Email\": \"joao@email.com\",\n      \"Cargo\": \"usuario\",\n      \"Email_Verificado\": true,\n      \"Data_Criacao\": \"2026-03-13\"\n    },\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+						},
+						{
+							"name": "Credenciais inválidas",
+							"status": "Unauthorized", "code": 401,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Email ou senha inválidos\"\n}"
+						},
+						{
+							"name": "Email não verificado",
+							"status": "Forbidden", "code": 403,
+							"body": "{\n  \"success\": false,\n  \"error\": \"E-mail não verificado. Verifique sua caixa de entrada.\",\n  \"requiresVerification\": true,\n  \"email\": \"joao@email.com\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Esqueci a Senha",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"joao@email.com\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/usuarios/esqueci-senha", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "esqueci-senha"] },
+						"description": "Envia um código de 6 dígitos para o email informado para redefinição de senha.\n\n**Nota de segurança:** emails não cadastrados retornam mensagem de sucesso para evitar enumeração."
+					},
+					"response": [
+						{
+							"name": "Código enviado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Código enviado para o seu e-mail.\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Resetar Senha",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"joao@email.com\",\n  \"codigo\": \"123456\",\n  \"novaSenha\": \"novaSenha123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/usuarios/resetar-senha", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "resetar-senha"] },
+						"description": "Redefine a senha usando o código enviado por email.\n\n**Campos obrigatórios:**\n| Campo | Tipo | Regra |\n|---|---|---|\n| `email` | string | Email cadastrado |\n| `codigo` | string | Código de 6 dígitos |\n| `novaSenha` | string | Mínimo 6 caracteres |"
+					},
+					"response": [
+						{
+							"name": "Senha redefinida",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Senha redefinida com sucesso.\"\n  }\n}"
+						},
+						{
+							"name": "Código expirado",
+							"status": "Bad Request", "code": 400,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Código expirado. Solicite um novo código.\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "👤 Usuários",
+			"description": "CRUD de usuários. Todos requerem autenticação.\n\n**Modelo Usuario:**\n| Campo | Tipo | Descrição |\n|---|---|---|\n| `Id_Usuario` | UUID | Chave primária |\n| `Nome` | string(100) | Nome completo |\n| `Email` | string(100) | Email único |\n| `Cargo` | enum | `usuario` ou `admin` |\n| `Email_Verificado` | boolean | Se o email foi verificado |\n| `Data_Criacao` | date | Data de cadastro |\n\n⚠️ Os campos `Senha`, `Codigo_Verificacao` e `Codigo_Expiracao` nunca são retornados nas respostas.",
+			"item": [
+				{
+					"name": "Listar Todos os Usuários",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/usuarios", "host": ["{{baseUrl}}"], "path": ["api", "usuarios"] },
+						"description": "Retorna lista de todos os usuários cadastrados."
+					},
+					"response": [
+						{
+							"name": "Lista de usuários",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"Nome\": \"João Silva\",\n      \"Email\": \"joao@email.com\",\n      \"Cargo\": \"usuario\",\n      \"Email_Verificado\": true,\n      \"Data_Criacao\": \"2026-03-13\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Buscar Usuário por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/usuarios/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "{{userId}}"] },
+						"description": "Busca um usuário específico pelo ID (UUID)."
+					},
+					"response": [
+						{
+							"name": "Usuário encontrado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Nome\": \"João Silva\",\n    \"Email\": \"joao@email.com\",\n    \"Cargo\": \"usuario\",\n    \"Email_Verificado\": true,\n    \"Data_Criacao\": \"2026-03-13\"\n  }\n}"
+						},
+						{
+							"name": "Não encontrado",
+							"status": "Not Found", "code": 404,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Usuário não encontrado\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Atualizar Usuário",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Nome\": \"João Silva Atualizado\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/usuarios/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "{{userId}}"] },
+						"description": "Atualiza campos do usuário. Envie apenas os campos que deseja alterar.\n\n**Nota:** se `Senha` for enviada, será automaticamente criptografada com bcrypt."
+					},
+					"response": [
+						{
+							"name": "Usuário atualizado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Nome\": \"João Silva Atualizado\",\n    \"Email\": \"joao@email.com\",\n    \"Cargo\": \"usuario\",\n    \"Email_Verificado\": true,\n    \"Data_Criacao\": \"2026-03-13\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Deletar Usuário",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/usuarios/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "usuarios", "{{userId}}"] },
+						"description": "Deleta o usuário e **em cascata** todos os seus dados: contas, despesas, rendas, parcelamentos, reservas e membros da família."
+					},
+					"response": [
+						{
+							"name": "Usuário deletado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Usuário deletado com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "💳 Contas e Cartões",
+			"description": "Gerenciamento de contas bancárias e cartões. Todos requerem autenticação.\n\n**Modelo ContaCartao:**\n| Campo | Tipo | Obrigatório | Descrição |\n|---|---|---|---|\n| `Id_Conta` | UUID | auto | Chave primária |\n| `Id_Usuario` | UUID | sim | FK do usuário |\n| `Nome_Conta` | string(50) | sim | Nome da conta |\n| `Tipo` | enum | sim | `Corrente`, `Crédito` ou `Dinheiro` |\n| `Titular` | string(100) | sim | Nome do titular |\n| `Ultimos_Digitos` | char(4) | não | Últimos 4 dígitos |\n| `Cor_Hex` | char(7) | sim | Cor em hex ex: `#6366f1` |",
+			"item": [
+				{
+					"name": "Criar Conta/Cartão",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 201 && res.data?.Id_Conta) {",
+									"    pm.collectionVariables.set('contaId', res.data.Id_Conta);",
+									"    console.log('contaId salvo:', res.data.Id_Conta);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id_Usuario\": \"{{userId}}\",\n  \"Nome_Conta\": \"Nubank\",\n  \"Tipo\": \"Crédito\",\n  \"Titular\": \"João Silva\",\n  \"Ultimos_Digitos\": \"1234\",\n  \"Cor_Hex\": \"#8b5cf6\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/contas-cartoes", "host": ["{{baseUrl}}"], "path": ["api", "contas-cartoes"] },
+						"description": "Cria uma nova conta ou cartão.\n\n**Tipos aceitos:** `Corrente`, `Crédito`, `Dinheiro`\n\n**Cor_Hex:** formato `#RRGGBB` em maiúsculas, ex: `#6366F1`\n\nO `Id_Conta` é salvo automaticamente em `{{contaId}}`."
+					},
+					"response": [
+						{
+							"name": "Conta criada",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Conta\": \"661f5e1a-0000-0000-0000-000000000001\",\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Nome_Conta\": \"Nubank\",\n    \"Tipo\": \"Crédito\",\n    \"Titular\": \"João Silva\",\n    \"Ultimos_Digitos\": \"1234\",\n    \"Cor_Hex\": \"#8b5cf6\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Contas do Usuário",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/contas-cartoes/usuario/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "contas-cartoes", "usuario", "{{userId}}"] },
+						"description": "Lista todas as contas e cartões do usuário."
+					},
+					"response": [
+						{
+							"name": "Lista de contas",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"Id_Conta\": \"661f5e1a-0000-0000-0000-000000000001\",\n      \"Nome_Conta\": \"Nubank\",\n      \"Tipo\": \"Crédito\",\n      \"Titular\": \"João Silva\",\n      \"Ultimos_Digitos\": \"1234\",\n      \"Cor_Hex\": \"#8b5cf6\"\n    },\n    {\n      \"Id_Conta\": \"661f5e1a-0000-0000-0000-000000000002\",\n      \"Nome_Conta\": \"Itaú\",\n      \"Tipo\": \"Corrente\",\n      \"Titular\": \"João Silva\",\n      \"Ultimos_Digitos\": null,\n      \"Cor_Hex\": \"#f59e0b\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Contas por Tipo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/contas-cartoes/usuario/{{userId}}?tipo=Crédito",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "contas-cartoes", "usuario", "{{userId}}"],
+							"query": [{ "key": "tipo", "value": "Crédito", "description": "Filtro: Corrente | Crédito | Dinheiro" }]
+						},
+						"description": "Lista contas filtradas por tipo.\n\n**Valores aceitos:** `Corrente`, `Crédito`, `Dinheiro`"
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Conta por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/contas-cartoes/{{contaId}}", "host": ["{{baseUrl}}"], "path": ["api", "contas-cartoes", "{{contaId}}"] },
+						"description": "Busca uma conta/cartão pelo ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Conta/Cartão",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Nome_Conta\": \"Nubank Platinum\",\n  \"Cor_Hex\": \"#6366f1\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/contas-cartoes/{{contaId}}", "host": ["{{baseUrl}}"], "path": ["api", "contas-cartoes", "{{contaId}}"] },
+						"description": "Atualiza os dados da conta. Envie apenas os campos a alterar."
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar Conta/Cartão",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/contas-cartoes/{{contaId}}", "host": ["{{baseUrl}}"], "path": ["api", "contas-cartoes", "{{contaId}}"] },
+						"description": "Deleta a conta. ⚠️ As despesas vinculadas a esta conta também serão afetadas."
+					},
+					"response": [
+						{
+							"name": "Conta deletada",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Conta deletada com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "💸 Despesas",
+			"description": "Gerenciamento de despesas. Todos requerem autenticação.\n\n**Modelo Despesa:**\n| Campo | Tipo | Obrigatório | Descrição |\n|---|---|---|---|\n| `Id_Despesa` | UUID | auto | Chave primária |\n| `Id_Usuario` | UUID | sim | FK do usuário |\n| `Id_Conta` | UUID | sim | FK da conta/cartão |\n| `Id_Parcelamento` | UUID | não | FK do parcelamento (se parcelado) |\n| `Descricao_Despesa` | string(100) | sim | Descrição |\n| `Valor_Parcela` | decimal(10,2) | sim | Valor da parcela |\n| `Data` | date (YYYY-MM-DD) | sim | Data da despesa |\n| `Categoria` | string(50) | sim | Uma das 10 categorias |\n| `Numero_Parcela` | integer | auto | Número da parcela (default: 1) |\n\n**Categorias:** `Alimentação` `Transporte` `Moradia` `Saúde` `Educação` `Entretenimento` `Eletrônicos` `Roupas` `Contas` `Outros`\n\n**Criação inteligente:** se `Numero_Parcelas > 1`, cria automaticamente um `ParcelamentoAgrupador` e N despesas mensais.",
+			"item": [
+				{
+					"name": "Criar Despesa (avulsa)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 201 && res.data?.Id_Despesa) {",
+									"    pm.collectionVariables.set('despesaId', res.data.Id_Despesa);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id_Usuario\": \"{{userId}}\",\n  \"Id_Conta\": \"{{contaId}}\",\n  \"Descricao_Despesa\": \"Supermercado Extra\",\n  \"Valor_Parcela\": 250.50,\n  \"Data\": \"2026-03-13\",\n  \"Categoria\": \"Alimentação\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/despesas", "host": ["{{baseUrl}}"], "path": ["api", "despesas"] },
+						"description": "Cria uma despesa única (sem parcelamento).\n\nO `Id_Despesa` é salvo em `{{despesaId}}`."
+					},
+					"response": [
+						{
+							"name": "Despesa criada",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Despesa\": \"771a0000-0000-0000-0000-000000000001\",\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Id_Conta\": \"661f5e1a-0000-0000-0000-000000000001\",\n    \"Id_Parcelamento\": null,\n    \"Descricao_Despesa\": \"Supermercado Extra\",\n    \"Valor_Parcela\": \"250.50\",\n    \"Data\": \"2026-03-13\",\n    \"Categoria\": \"Alimentação\",\n    \"Numero_Parcela\": 1,\n    \"conta\": {\n      \"Id_Conta\": \"661f5e1a-0000-0000-0000-000000000001\",\n      \"Nome_Conta\": \"Nubank\",\n      \"Tipo\": \"Crédito\",\n      \"Cor_Hex\": \"#8b5cf6\"\n    },\n    \"parcelamento\": null\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Despesa Parcelada",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 201 && res.data?.parcelamento?.Id_Parcelamento) {",
+									"    pm.collectionVariables.set('parcelamentoId', res.data.parcelamento.Id_Parcelamento);",
+									"    console.log('parcelamentoId salvo:', res.data.parcelamento.Id_Parcelamento);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id_Usuario\": \"{{userId}}\",\n  \"Id_Conta\": \"{{contaId}}\",\n  \"Descricao_Despesa\": \"iPhone 15 Pro\",\n  \"Valor_Total\": 6000.00,\n  \"Numero_Parcelas\": 12,\n  \"Data\": \"2026-03-13\",\n  \"Categoria\": \"Eletrônicos\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/despesas", "host": ["{{baseUrl}}"], "path": ["api", "despesas"] },
+						"description": "Cria uma despesa parcelada. Quando `Numero_Parcelas > 1`, o sistema automaticamente:\n1. Cria um `ParcelamentoAgrupador`\n2. Cria N despesas, uma por mês, com `Valor_Parcela = Valor_Total / N`\n3. As datas incrementam mensalmente a partir de `Data`\n\nO `Id_Parcelamento` é salvo em `{{parcelamentoId}}`."
+					},
+					"response": [
+						{
+							"name": "Parcelamento criado",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"parcelamento\": {\n      \"Id_Parcelamento\": \"pp000000-0000-0000-0000-000000000001\",\n      \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"Descricao_Parcela\": \"iPhone 15 Pro\",\n      \"Valor_Total\": \"6000.00\",\n      \"Qtd_Parcelas\": 12,\n      \"Data_Inicio\": \"2026-03-13\"\n    },\n    \"despesas\": [\n      {\n        \"Id_Despesa\": \"dd000001-0000-0000-0000-000000000001\",\n        \"Descricao_Despesa\": \"iPhone 15 Pro\",\n        \"Valor_Parcela\": \"500.00\",\n        \"Data\": \"2026-03-13\",\n        \"Categoria\": \"Eletrônicos\",\n        \"Numero_Parcela\": 1\n      },\n      {\n        \"Id_Despesa\": \"dd000001-0000-0000-0000-000000000002\",\n        \"Descricao_Despesa\": \"iPhone 15 Pro\",\n        \"Valor_Parcela\": \"500.00\",\n        \"Data\": \"2026-04-13\",\n        \"Categoria\": \"Eletrônicos\",\n        \"Numero_Parcela\": 2\n      }\n    ]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Buscar Despesa por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/despesas/{{despesaId}}", "host": ["{{baseUrl}}"], "path": ["api", "despesas", "{{despesaId}}"] },
+						"description": "Busca uma despesa pelo ID, incluindo dados da conta e parcelamento relacionados."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Despesas do Usuário",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/despesas/usuario/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "despesas", "usuario", "{{userId}}"] },
+						"description": "Lista todas as despesas do usuário, ordenadas por data decrescente."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Despesas com Filtros",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/despesas/usuario/{{userId}}?mes=3&ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "despesas", "usuario", "{{userId}}"],
+							"query": [
+								{ "key": "mes", "value": "3", "description": "Mês 1-12" },
+								{ "key": "ano", "value": "2026", "description": "Ano" },
+								{ "key": "categoria", "value": "Alimentação", "description": "Filtrar por categoria", "disabled": true },
+								{ "key": "idConta", "value": "{{contaId}}", "description": "Filtrar por conta/cartão", "disabled": true },
+								{ "key": "dataInicio", "value": "2026-03-01", "description": "Período início (YYYY-MM-DD)", "disabled": true },
+								{ "key": "dataFim", "value": "2026-03-31", "description": "Período fim (YYYY-MM-DD)", "disabled": true }
+							]
+						},
+						"description": "Lista despesas com filtros. Todos os parâmetros são opcionais e combináveis.\n\n| Parâmetro | Tipo | Descrição |\n|---|---|---|\n| `mes` | integer | Mês (1-12) |\n| `ano` | integer | Ano |\n| `categoria` | string | Categoria exata |\n| `idConta` | UUID | Conta/cartão específico |\n| `dataInicio` | date | Início do período |\n| `dataFim` | date | Fim do período |"
+					},
+					"response": []
+				},
+				{
+					"name": "Total de Despesas do Mês",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/despesas/usuario/{{userId}}/total?mes=3&ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "despesas", "usuario", "{{userId}}", "total"],
+							"query": [
+								{ "key": "mes", "value": "3", "description": "Mês — obrigatório" },
+								{ "key": "ano", "value": "2026", "description": "Ano — obrigatório" }
+							]
+						},
+						"description": "Retorna a soma de todas as despesas do mês."
+					},
+					"response": [
+						{
+							"name": "Total calculado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"total\": 1850.75\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Despesas por Categoria",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/despesas/usuario/{{userId}}/categorias?mes=3&ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "despesas", "usuario", "{{userId}}", "categorias"],
+							"query": [
+								{ "key": "mes", "value": "3", "description": "Mês — obrigatório" },
+								{ "key": "ano", "value": "2026", "description": "Ano — obrigatório" }
+							]
+						},
+						"description": "Retorna despesas agrupadas por categoria com totais. Útil para gráficos de pizza."
+					},
+					"response": [
+						{
+							"name": "Por categoria",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": [\n    { \"categoria\": \"Alimentação\", \"total\": 650.00 },\n    { \"categoria\": \"Transporte\", \"total\": 320.50 },\n    { \"categoria\": \"Contas\", \"total\": 880.25 }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Top Despesas do Mês",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/despesas/usuario/{{userId}}/top?mes=3&ano=2026&limite=5",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "despesas", "usuario", "{{userId}}", "top"],
+							"query": [
+								{ "key": "mes", "value": "3" },
+								{ "key": "ano", "value": "2026" },
+								{ "key": "limite", "value": "5", "description": "Número de resultados (opcional)" }
+							]
+						},
+						"description": "Retorna as N maiores despesas do mês, ordenadas por valor decrescente."
+					},
+					"response": []
+				},
+				{
+					"name": "Exportar Despesas CSV",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/despesas/usuario/{{userId}}/exportar-csv?mes=3&ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "despesas", "usuario", "{{userId}}", "exportar-csv"],
+							"query": [
+								{ "key": "mes", "value": "3", "description": "Mês — obrigatório" },
+								{ "key": "ano", "value": "2026", "description": "Ano — obrigatório" }
+							]
+						},
+						"description": "Exporta as despesas do mês em CSV.\n\n**Content-Type:** `text/csv`\n**Colunas:** `Descricao;Valor;Data;Categoria;Conta;Parcela`"
+					},
+					"response": [
+						{
+							"name": "CSV gerado",
+							"status": "OK", "code": 200,
+							"header": [{ "key": "Content-Type", "value": "text/csv" }],
+							"body": "Descricao;Valor;Data;Categoria;Conta;Parcela\nSupermercado Extra;250.50;2026-03-13;Alimentação;Nubank;1/1\niPhone 15 Pro;500.00;2026-03-13;Eletrônicos;Nubank;1/12"
+						}
+					]
+				},
+				{
+					"name": "Atualizar Despesa",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Descricao_Despesa\": \"Supermercado Pão de Açúcar\",\n  \"Valor_Parcela\": 310.00,\n  \"Categoria\": \"Alimentação\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/despesas/{{despesaId}}", "host": ["{{baseUrl}}"], "path": ["api", "despesas", "{{despesaId}}"] },
+						"description": "Atualiza os dados de uma despesa. Envie apenas os campos a alterar."
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar Despesa",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/despesas/{{despesaId}}", "host": ["{{baseUrl}}"], "path": ["api", "despesas", "{{despesaId}}"] },
+						"description": "Deleta apenas esta despesa."
+					},
+					"response": [
+						{
+							"name": "Despesa deletada",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Despesa deletada com sucesso\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Deletar Despesa e Parcelamento",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/despesas/{{despesaId}}?deletarParcelamento=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "despesas", "{{despesaId}}"],
+							"query": [{ "key": "deletarParcelamento", "value": "true", "description": "Deleta o parcelamento agrupador e TODAS as parcelas" }]
+						},
+						"description": "Deleta a despesa e, se estiver vinculada a um parcelamento, deleta o agrupador e **todas as parcelas** associadas."
+					},
+					"response": [
+						{
+							"name": "Parcelamento deletado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Parcelamento e todas as parcelas deletados com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "💰 Rendas",
+			"description": "Gerenciamento de rendas/receitas. Todos requerem autenticação.\n\n**Modelo Renda:**\n| Campo | Tipo | Obrigatório | Descrição |\n|---|---|---|---|\n| `Id_Renda` | UUID | auto | Chave primária |\n| `Id_Usuario` | UUID | sim | FK do usuário |\n| `Descricao_Renda` | string(100) | sim | Descrição |\n| `Valor_Renda` | decimal(10,2) | sim | Valor |\n| `Data` | date (YYYY-MM-DD) | sim | Data da renda |\n| `Fixa` | boolean | não | Se é renda fixa mensal (default: false) |\n| `Dia_Vencimento` | integer (1-31) | não | Dia de vencimento (default: dia da `Data`) |\n\n**Renda Fixa (`Fixa: true`):** cria automaticamente 12 registros mensais.\n**`atualizarTodas`** no PUT: atualiza todos os registros futuros com mesma descrição.",
+			"item": [
+				{
+					"name": "Criar Renda (avulsa)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 201) {",
+									"    const id = Array.isArray(res.data) ? res.data[0]?.Id_Renda : res.data?.Id_Renda;",
+									"    if (id) pm.collectionVariables.set('rendaId', id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id_Usuario\": \"{{userId}}\",\n  \"Descricao_Renda\": \"Freelance Design\",\n  \"Valor_Renda\": 1500.00,\n  \"Data\": \"2026-03-13\",\n  \"Fixa\": false\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/rendas", "host": ["{{baseUrl}}"], "path": ["api", "rendas"] },
+						"description": "Cria uma renda avulsa (única).\n\nO `Id_Renda` é salvo em `{{rendaId}}`."
+					},
+					"response": [
+						{
+							"name": "Renda criada",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Renda\": \"rr000000-0000-0000-0000-000000000001\",\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Descricao_Renda\": \"Freelance Design\",\n    \"Valor_Renda\": \"1500.00\",\n    \"Data\": \"2026-03-13\",\n    \"Fixa\": false,\n    \"Dia_Vencimento\": 13\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Renda Fixa (12 meses)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id_Usuario\": \"{{userId}}\",\n  \"Descricao_Renda\": \"Salário\",\n  \"Valor_Renda\": 5000.00,\n  \"Data\": \"2026-03-05\",\n  \"Fixa\": true,\n  \"Dia_Vencimento\": 5\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/rendas", "host": ["{{baseUrl}}"], "path": ["api", "rendas"] },
+						"description": "Cria uma renda fixa. O sistema gera automaticamente **12 registros mensais** a partir da data informada.\n\n`Dia_Vencimento` define o dia de cada mês. Se omitido, usa o dia da `Data`. Se o dia não existir no mês (ex: 31 em fevereiro), usa o último dia do mês.\n\n**Retorna:** array com os 12 registros criados."
+					},
+					"response": [
+						{
+							"name": "12 rendas fixas criadas",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"Id_Renda\": \"rr000000-0000-0000-0000-000000000001\",\n      \"Descricao_Renda\": \"Salário\",\n      \"Valor_Renda\": \"5000.00\",\n      \"Data\": \"2026-03-05\",\n      \"Fixa\": true,\n      \"Dia_Vencimento\": 5\n    },\n    {\n      \"Id_Renda\": \"rr000000-0000-0000-0000-000000000002\",\n      \"Descricao_Renda\": \"Salário\",\n      \"Valor_Renda\": \"5000.00\",\n      \"Data\": \"2026-04-05\",\n      \"Fixa\": true,\n      \"Dia_Vencimento\": 5\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Rendas do Usuário",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/rendas/usuario/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "rendas", "usuario", "{{userId}}"] },
+						"description": "Lista todas as rendas do usuário, ordenadas por data decrescente."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Rendas com Filtros",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rendas/usuario/{{userId}}?mes=3&ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rendas", "usuario", "{{userId}}"],
+							"query": [
+								{ "key": "mes", "value": "3", "description": "Mês (1-12)" },
+								{ "key": "ano", "value": "2026", "description": "Ano" },
+								{ "key": "dataInicio", "value": "2026-03-01", "description": "Início do período", "disabled": true },
+								{ "key": "dataFim", "value": "2026-03-31", "description": "Fim do período", "disabled": true }
+							]
+						},
+						"description": "Lista rendas com filtros opcionais de mês/ano ou período."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Renda por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/rendas/{{rendaId}}", "host": ["{{baseUrl}}"], "path": ["api", "rendas", "{{rendaId}}"] },
+						"description": "Busca uma renda pelo ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Total de Rendas do Mês",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rendas/usuario/{{userId}}/total?mes=3&ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rendas", "usuario", "{{userId}}", "total"],
+							"query": [
+								{ "key": "mes", "value": "3", "description": "Mês — obrigatório" },
+								{ "key": "ano", "value": "2026", "description": "Ano — obrigatório" }
+							]
+						},
+						"description": "Retorna a soma de todas as rendas do mês."
+					},
+					"response": [
+						{
+							"name": "Total calculado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"total\": 6500.00\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Atualizar Renda",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Valor_Renda\": 5500.00\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/rendas/{{rendaId}}", "host": ["{{baseUrl}}"], "path": ["api", "rendas", "{{rendaId}}"] },
+						"description": "Atualiza os dados da renda."
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Renda Fixa (todos os meses)",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Valor_Renda\": 5500.00,\n  \"atualizarTodas\": true\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/rendas/{{rendaId}}", "host": ["{{baseUrl}}"], "path": ["api", "rendas", "{{rendaId}}"] },
+						"description": "Atualiza esta renda **e todos os registros futuros** com a mesma descrição e dia de vencimento.\n\nUsar quando `Fixa: true` e se quer propagar a alteração para os próximos meses."
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar Renda",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/rendas/{{rendaId}}", "host": ["{{baseUrl}}"], "path": ["api", "rendas", "{{rendaId}}"] },
+						"description": "Deleta apenas esta renda."
+					},
+					"response": [
+						{
+							"name": "Renda deletada",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Renda deletada com sucesso\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Deletar Todas as Rendas Fixas",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/rendas/{{rendaId}}?deletarTodas=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "rendas", "{{rendaId}}"],
+							"query": [{ "key": "deletarTodas", "value": "true", "description": "Deleta esta e todas as rendas fixas relacionadas" }]
+						},
+						"description": "Deleta esta renda e **todos os registros futuros** de renda fixa com a mesma descrição e dia de vencimento."
+					},
+					"response": [
+						{
+							"name": "Rendas fixas deletadas",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Rendas fixas deletadas com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📦 Parcelamentos",
+			"description": "Gerenciamento direto de parcelamentos (agrupadores). Todos requerem autenticação.\n\n**Modelo ParcelamentoAgrupador:**\n| Campo | Tipo | Obrigatório | Descrição |\n|---|---|---|---|\n| `Id_Parcelamento` | UUID | auto | Chave primária |\n| `Id_Usuario` | UUID | sim | FK do usuário |\n| `Descricao_Parcela` | string(100) | sim | Descrição |\n| `Valor_Total` | decimal(10,2) | sim | Valor total da compra |\n| `Qtd_Parcelas` | integer | sim | Número de parcelas |\n| `Data_Inicio` | date | sim | Data da primeira parcela |\n\n**Campos calculados (somente leitura):** `parcelas_pagas`, `parcelas_restantes`, `valor_restante`",
+			"item": [
+				{
+					"name": "Criar Parcelamento",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 201 && res.data?.Id_Parcelamento) {",
+									"    pm.collectionVariables.set('parcelamentoId', res.data.Id_Parcelamento);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id_Usuario\": \"{{userId}}\",\n  \"Descricao_Parcela\": \"Notebook Dell\",\n  \"Valor_Total\": 4800.00,\n  \"Qtd_Parcelas\": 10,\n  \"Data_Inicio\": \"2026-03-13\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/parcelamentos", "host": ["{{baseUrl}}"], "path": ["api", "parcelamentos"] },
+						"description": "Cria um parcelamento agrupador diretamente (sem criar as despesas automaticamente).\n\nUse este endpoint para gestão manual. Para criar parcelamento com despesas automáticas, use **POST /api/despesas** com `Numero_Parcelas > 1`."
+					},
+					"response": [
+						{
+							"name": "Parcelamento criado",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Parcelamento\": \"pp000000-0000-0000-0000-000000000001\",\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Descricao_Parcela\": \"Notebook Dell\",\n    \"Valor_Total\": \"4800.00\",\n    \"Qtd_Parcelas\": 10,\n    \"Data_Inicio\": \"2026-03-13\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Parcelamentos do Usuário",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/parcelamentos/usuario/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "parcelamentos", "usuario", "{{userId}}"] },
+						"description": "Lista todos os parcelamentos com campos calculados."
+					},
+					"response": [
+						{
+							"name": "Lista com campos calculados",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"Id_Parcelamento\": \"pp000000-0000-0000-0000-000000000001\",\n      \"Descricao_Parcela\": \"iPhone 15 Pro\",\n      \"Valor_Total\": \"6000.00\",\n      \"Qtd_Parcelas\": 12,\n      \"Data_Inicio\": \"2026-03-13\",\n      \"parcelas_pagas\": 1,\n      \"parcelas_restantes\": 11,\n      \"valor_restante\": \"5500.00\"\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Buscar Parcelamento por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/parcelamentos/{{parcelamentoId}}", "host": ["{{baseUrl}}"], "path": ["api", "parcelamentos", "{{parcelamentoId}}"] },
+						"description": "Busca um parcelamento com todas as despesas vinculadas."
+					},
+					"response": [
+						{
+							"name": "Parcelamento com despesas",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Parcelamento\": \"pp000000-0000-0000-0000-000000000001\",\n    \"Descricao_Parcela\": \"iPhone 15 Pro\",\n    \"Valor_Total\": \"6000.00\",\n    \"Qtd_Parcelas\": 12,\n    \"Data_Inicio\": \"2026-03-13\",\n    \"despesas\": [\n      {\n        \"Id_Despesa\": \"dd000001-0000-0000-0000-000000000001\",\n        \"Descricao_Despesa\": \"iPhone 15 Pro\",\n        \"Valor_Parcela\": \"500.00\",\n        \"Data\": \"2026-03-13\",\n        \"Numero_Parcela\": 1,\n        \"Categoria\": \"Eletrônicos\",\n        \"conta\": { \"Nome_Conta\": \"Nubank\", \"Tipo\": \"Crédito\", \"Cor_Hex\": \"#8b5cf6\" }\n      }\n    ]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Cronograma de Parcelamentos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/parcelamentos/usuario/{{userId}}/cronograma", "host": ["{{baseUrl}}"], "path": ["api", "parcelamentos", "usuario", "{{userId}}", "cronograma"] },
+						"description": "Retorna o cronograma mensal de todos os parcelamentos ativos, agrupados por mês."
+					},
+					"response": [
+						{
+							"name": "Cronograma mensal",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"mes\": \"2026-03\",\n      \"total\": 1000.00,\n      \"parcelas\": [\n        {\n          \"descricao\": \"iPhone 15 Pro\",\n          \"valor\": 500.00,\n          \"parcela\": \"1/12\",\n          \"data\": \"2026-03-13\"\n        },\n        {\n          \"descricao\": \"Notebook Dell\",\n          \"valor\": 480.00,\n          \"parcela\": \"1/10\",\n          \"data\": \"2026-03-13\"\n        }\n      ]\n    },\n    {\n      \"mes\": \"2026-04\",\n      \"total\": 1000.00,\n      \"parcelas\": []\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Dívidas Futuras",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/parcelamentos/usuario/{{userId}}/dividas-futuras", "host": ["{{baseUrl}}"], "path": ["api", "parcelamentos", "usuario", "{{userId}}", "dividas-futuras"] },
+						"description": "Retorna o total de dívidas futuras (soma de todas as parcelas ainda não vencidas)."
+					},
+					"response": [
+						{
+							"name": "Total de dívidas futuras",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"total\": 10780.00\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Faturas por Cartão",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/parcelamentos/usuario/{{userId}}/faturas?mes=3&ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "parcelamentos", "usuario", "{{userId}}", "faturas"],
+							"query": [
+								{ "key": "mes", "value": "3", "description": "Mês — obrigatório" },
+								{ "key": "ano", "value": "2026", "description": "Ano — obrigatório" }
+							]
+						},
+						"description": "Retorna despesas do mês agrupadas por cartão/conta. Útil para visualização de fatura."
+					},
+					"response": [
+						{
+							"name": "Faturas agrupadas",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"conta\": {\n        \"Id_Conta\": \"661f5e1a-0000-0000-0000-000000000001\",\n        \"Nome_Conta\": \"Nubank\",\n        \"Tipo\": \"Crédito\",\n        \"Cor_Hex\": \"#8b5cf6\",\n        \"Ultimos_Digitos\": \"1234\"\n      },\n      \"total_fatura\": 1250.50,\n      \"quantidade_itens\": 3,\n      \"despesas\": [\n        {\n          \"Descricao_Despesa\": \"iPhone 15 Pro\",\n          \"Valor_Parcela\": \"500.00\",\n          \"Data\": \"2026-03-13\",\n          \"Categoria\": \"Eletrônicos\",\n          \"parcela_info\": \"1/12\"\n        },\n        {\n          \"Descricao_Despesa\": \"Supermercado Extra\",\n          \"Valor_Parcela\": \"250.50\",\n          \"Data\": \"2026-03-13\",\n          \"Categoria\": \"Alimentação\",\n          \"parcela_info\": \"À vista\"\n        }\n      ]\n    }\n  ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Atualizar Parcelamento",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Descricao_Parcela\": \"Notebook Dell XPS\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/parcelamentos/{{parcelamentoId}}", "host": ["{{baseUrl}}"], "path": ["api", "parcelamentos", "{{parcelamentoId}}"] },
+						"description": "Atualiza os dados do parcelamento agrupador."
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar Parcelamento",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/parcelamentos/{{parcelamentoId}}", "host": ["{{baseUrl}}"], "path": ["api", "parcelamentos", "{{parcelamentoId}}"] },
+						"description": "Deleta o parcelamento e **todas as despesas** vinculadas a ele."
+					},
+					"response": [
+						{
+							"name": "Parcelamento deletado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Parcelamento e todas as parcelas deletados com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🏦 Reservas",
+			"description": "Gerenciamento de reservas e metas de poupança. Todos requerem autenticação.\n\n**Modelo Reserva:**\n| Campo | Tipo | Obrigatório | Descrição |\n|---|---|---|---|\n| `Id_Reserva` | UUID | auto | Chave primária |\n| `Id_Usuario` | UUID | sim | FK do usuário |\n| `Nome_Objetivo` | string(100) | sim | Nome da reserva/objetivo |\n| `Valor_Alvo` | decimal(10,2) | sim | Meta de valor |\n| `Valor_Atual` | decimal(10,2) | não | Saldo atual (default: 0) |\n| `Data_Limite` | date | não | Data limite para atingir a meta |",
+			"item": [
+				{
+					"name": "Criar Reserva",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 201 && res.data?.Id_Reserva) {",
+									"    pm.collectionVariables.set('reservaId', res.data.Id_Reserva);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id_Usuario\": \"{{userId}}\",\n  \"Nome_Objetivo\": \"Viagem Europa\",\n  \"Valor_Alvo\": 15000.00,\n  \"Valor_Atual\": 1000.00,\n  \"Data_Limite\": \"2027-06-30\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/reservas", "host": ["{{baseUrl}}"], "path": ["api", "reservas"] },
+						"description": "Cria uma nova reserva com meta de valor.\n\nO `Id_Reserva` é salvo em `{{reservaId}}`."
+					},
+					"response": [
+						{
+							"name": "Reserva criada",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Reserva\": \"res00000-0000-0000-0000-000000000001\",\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Nome_Objetivo\": \"Viagem Europa\",\n    \"Valor_Alvo\": \"15000.00\",\n    \"Valor_Atual\": \"1000.00\",\n    \"Data_Limite\": \"2027-06-30\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Reservas do Usuário",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/reservas/usuario/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "reservas", "usuario", "{{userId}}"] },
+						"description": "Lista todas as reservas do usuário."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Reserva por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/reservas/{{reservaId}}", "host": ["{{baseUrl}}"], "path": ["api", "reservas", "{{reservaId}}"] },
+						"description": "Busca uma reserva pelo ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Adicionar Valor à Reserva",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"valor\": 500.00\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/reservas/{{reservaId}}/adicionar", "host": ["{{baseUrl}}"], "path": ["api", "reservas", "{{reservaId}}", "adicionar"] },
+						"description": "Deposita um valor na reserva, incrementando `Valor_Atual`.\n\n⚠️ `valor` deve ser maior que 0."
+					},
+					"response": [
+						{
+							"name": "Valor adicionado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Reserva\": \"res00000-0000-0000-0000-000000000001\",\n    \"Nome_Objetivo\": \"Viagem Europa\",\n    \"Valor_Alvo\": \"15000.00\",\n    \"Valor_Atual\": \"1500.00\"\n  }\n}"
+						},
+						{
+							"name": "Valor inválido",
+							"status": "Bad Request", "code": 400,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Valor deve ser maior que zero\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Retirar Valor da Reserva",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"valor\": 200.00\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/reservas/{{reservaId}}/retirar", "host": ["{{baseUrl}}"], "path": ["api", "reservas", "{{reservaId}}", "retirar"] },
+						"description": "Retira um valor da reserva, decrementando `Valor_Atual`.\n\n⚠️ `valor` deve ser maior que 0."
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Reserva",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Nome_Objetivo\": \"Viagem Europa e Ásia\",\n  \"Valor_Alvo\": 20000.00,\n  \"Data_Limite\": \"2027-12-31\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/reservas/{{reservaId}}", "host": ["{{baseUrl}}"], "path": ["api", "reservas", "{{reservaId}}"] },
+						"description": "Atualiza os dados da reserva."
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar Reserva",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/reservas/{{reservaId}}", "host": ["{{baseUrl}}"], "path": ["api", "reservas", "{{reservaId}}"] },
+						"description": "Deleta a reserva."
+					},
+					"response": [
+						{
+							"name": "Reserva deletada",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Reserva deletada com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "👨‍👩‍👧 Membros da Família",
+			"description": "Gerenciamento de membros da família. Todos requerem autenticação.\n\n**Modelo MembroFamilia:**\n| Campo | Tipo | Obrigatório | Descrição |\n|---|---|---|---|\n| `Id_Membro` | UUID | auto | Chave primária |\n| `Id_Usuario` | UUID | sim | FK do usuário |\n| `Nome_Membro` | string(100) | sim | Nome do membro |\n| `Parentesco` | string(50) | não | Grau de parentesco |",
+			"item": [
+				{
+					"name": "Criar Membro da Família",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (pm.response.code === 201 && res.data?.Id_Membro) {",
+									"    pm.collectionVariables.set('membroId', res.data.Id_Membro);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id_Usuario\": \"{{userId}}\",\n  \"Nome_Membro\": \"Maria Silva\",\n  \"Parentesco\": \"Esposa\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/membros-familia", "host": ["{{baseUrl}}"], "path": ["api", "membros-familia"] },
+						"description": "Cria um novo membro da família. O `Id_Membro` é salvo em `{{membroId}}`."
+					},
+					"response": [
+						{
+							"name": "Membro criado",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Membro\": \"mb000000-0000-0000-0000-000000000001\",\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Nome_Membro\": \"Maria Silva\",\n    \"Parentesco\": \"Esposa\"\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Membros da Família",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/membros-familia/usuario/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "membros-familia", "usuario", "{{userId}}"] },
+						"description": "Lista todos os membros da família do usuário."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Membro por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/membros-familia/{{membroId}}", "host": ["{{baseUrl}}"], "path": ["api", "membros-familia", "{{membroId}}"] },
+						"description": "Busca um membro da família pelo ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Atualizar Membro da Família",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Nome_Membro\": \"Maria Santos Silva\",\n  \"Parentesco\": \"Cônjuge\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/membros-familia/{{membroId}}", "host": ["{{baseUrl}}"], "path": ["api", "membros-familia", "{{membroId}}"] },
+						"description": "Atualiza os dados do membro."
+					},
+					"response": []
+				},
+				{
+					"name": "Deletar Membro da Família",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/membros-familia/{{membroId}}", "host": ["{{baseUrl}}"], "path": ["api", "membros-familia", "{{membroId}}"] },
+						"description": "Deleta o membro da família."
+					},
+					"response": [
+						{
+							"name": "Membro deletado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Membro deletado com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📊 Dashboard",
+			"description": "Relatórios e resumos financeiros. Todos requerem autenticação.",
+			"item": [
+				{
+					"name": "Resumo Mensal",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dashboard/usuario/{{userId}}/resumo-mensal?mes=3&ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dashboard", "usuario", "{{userId}}", "resumo-mensal"],
+							"query": [
+								{ "key": "mes", "value": "3", "description": "Mês (1-12) — obrigatório" },
+								{ "key": "ano", "value": "2026", "description": "Ano — obrigatório" }
+							]
+						},
+						"description": "Retorna o resumo financeiro mensal: receitas, despesas, saldo e breakdown por categoria."
+					},
+					"response": [
+						{
+							"name": "Resumo do mês",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"periodo\": { \"mes\": 3, \"ano\": 2026 },\n    \"receitas\": 6500.00,\n    \"despesas\": 1850.75,\n    \"saldo\": 4649.25,\n    \"por_categoria\": [\n      { \"categoria\": \"Alimentação\", \"total\": 650.00 },\n      { \"categoria\": \"Transporte\", \"total\": 320.50 },\n      { \"categoria\": \"Eletrônicos\", \"total\": 500.00 },\n      { \"categoria\": \"Contas\", \"total\": 380.25 }\n    ]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Relatório Anual",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dashboard/usuario/{{userId}}/relatorio-anual?ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dashboard", "usuario", "{{userId}}", "relatorio-anual"],
+							"query": [{ "key": "ano", "value": "2026", "description": "Ano — obrigatório" }]
+						},
+						"description": "Retorna o relatório financeiro do ano completo, mês a mês."
+					},
+					"response": [
+						{
+							"name": "Relatório anual",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"ano\": 2026,\n    \"por_mes\": [\n      { \"mes\": 1, \"receitas\": 5000.00, \"despesas\": 3200.00, \"saldo\": 1800.00 },\n      { \"mes\": 2, \"receitas\": 5000.00, \"despesas\": 2800.00, \"saldo\": 2200.00 },\n      { \"mes\": 3, \"receitas\": 6500.00, \"despesas\": 1850.75, \"saldo\": 4649.25 },\n      { \"mes\": 4, \"receitas\": 0, \"despesas\": 0, \"saldo\": 0 }\n    ],\n    \"total_receitas\": 16500.00,\n    \"total_despesas\": 7850.75,\n    \"resultado\": 8649.25\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Exportar Relatório Anual CSV",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dashboard/usuario/{{userId}}/relatorio-anual/csv?ano=2026",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dashboard", "usuario", "{{userId}}", "relatorio-anual", "csv"],
+							"query": [{ "key": "ano", "value": "2026", "description": "Ano — obrigatório" }]
+						},
+						"description": "Exporta o relatório anual em formato CSV.\n\n**Content-Type:** `text/csv`"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📂 Importar CSV",
+			"description": "Importação de transações via arquivo CSV bancário.\n\n**Fluxo de importação:**\n1. `Preview` — detecta separador, colunas e sugere mapeamento\n2. `Processar` — mapeia colunas e detecta parcelamentos automaticamente\n3. `Confirmar` — cria as despesas no banco de dados\n4. `Desfazer` — remove o que foi importado (caso queira reverter)\n\n**Formatos de número suportados:** `R$ 1.234,56` · `1.234,56` · `1234,56` · `1234.56`\n\n**Formatos de data suportados:** `DD/MM/YYYY` · `DD/MM/YY` · `YYYY-MM-DD`\n\n**Detecção de parcelamento:** ex. `IPHONE 15 05/12` → parcela 5 de 12\n\n**Categorização automática** por palavras-chave na descrição.",
+			"item": [
+				{
+					"name": "1. Preview do CSV",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"csv\": \"Data;Descrição;Valor\\n01/03/2026;Supermercado Extra;250,50\\n05/03/2026;IPHONE 15 05/12;500,00\\n10/03/2026;Farmácia;45,90\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/importar-csv", "host": ["{{baseUrl}}"], "path": ["api", "importar-csv"] },
+						"description": "Envia o conteúdo do CSV para análise. Retorna as colunas detectadas e uma sugestão de mapeamento.\n\n**Não requer autenticação.**\n\nDetecta automaticamente o separador (`;` ou `,`)."
+					},
+					"response": [
+						{
+							"name": "Preview com sugestão",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"separador\": \";\",\n    \"cabecalho\": [\"Data\", \"Descrição\", \"Valor\"],\n    \"amostra\": [\n      [\"01/03/2026\", \"Supermercado Extra\", \"250,50\"],\n      [\"05/03/2026\", \"IPHONE 15 05/12\", \"500,00\"]\n    ],\n    \"totalLinhas\": 3,\n    \"sugestao\": {\n      \"colData\": 0,\n      \"colDesc\": 1,\n      \"colValor\": 2\n    }\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "2. Processar CSV",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"csv\": \"Data;Descrição;Valor\\n01/03/2026;Supermercado Extra;250,50\\n05/03/2026;IPHONE 15 05/12;500,00\\n10/03/2026;Farmácia;45,90\",\n  \"colData\": 0,\n  \"colDesc\": 1,\n  \"colValor\": 2,\n  \"ignorarNegativo\": false\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/importar-csv/processar", "host": ["{{baseUrl}}"], "path": ["api", "importar-csv", "processar"] },
+						"description": "Processa o CSV mapeando as colunas. Detecta parcelamentos automaticamente e categoriza por palavras-chave.\n\n**Não requer autenticação.**\n\n| Campo | Tipo | Descrição |\n|---|---|---|\n| `csv` | string | Conteúdo CSV completo |\n| `colData` | integer | Índice da coluna de data (0-based) |\n| `colDesc` | integer | Índice da coluna de descrição |\n| `colValor` | integer | Índice da coluna de valor |\n| `ignorarNegativo` | boolean | Ignorar valores negativos |"
+					},
+					"response": [
+						{
+							"name": "CSV processado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"transacoes\": [\n      {\n        \"id\": \"uuid-1\",\n        \"descricao\": \"Supermercado Extra\",\n        \"data\": \"2026-03-01\",\n        \"valor\": 250.50,\n        \"categoria\": \"Alimentação\",\n        \"ehParcelamento\": false,\n        \"parcela\": null\n      },\n      {\n        \"id\": \"uuid-3\",\n        \"descricao\": \"Farmácia\",\n        \"data\": \"2026-03-10\",\n        \"valor\": 45.90,\n        \"categoria\": \"Saúde\",\n        \"ehParcelamento\": false\n      }\n    ],\n    \"grupos\": [\n      {\n        \"chave\": \"iphone-15\",\n        \"descricao\": \"IPHONE 15\",\n        \"categoria\": \"Eletrônicos\",\n        \"valorParcela\": 500.00,\n        \"totalParcelas\": 12,\n        \"parcelaAtual\": 5,\n        \"valorTotal\": 6000.00,\n        \"dataInicio\": \"2026-11-05\"\n      }\n    ],\n    \"erros\": [],\n    \"resumo\": {\n      \"total\": 3,\n      \"parcelamentos\": 1,\n      \"avulsas\": 2\n    }\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "3. Confirmar Importação",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"idConta\": \"{{contaId}}\",\n  \"transacoes\": [\n    {\n      \"id\": \"uuid-1\",\n      \"descricao\": \"Supermercado Extra\",\n      \"data\": \"2026-03-01\",\n      \"valor\": 250.50,\n      \"categoria\": \"Alimentação\",\n      \"ehParcelamento\": false\n    }\n  ],\n  \"grupos\": []\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/importar-csv/confirmar", "host": ["{{baseUrl}}"], "path": ["api", "importar-csv", "confirmar"] },
+						"description": "Persiste as transações processadas no banco de dados.\n\n**Requer autenticação.**\n\nUse os dados retornados pelo endpoint `Processar`. O campo `idConta` é obrigatório."
+					},
+					"response": [
+						{
+							"name": "Importação confirmada",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"parcelamentosCriados\": 1,\n    \"despesasCriadas\": 12,\n    \"despesasAvulsas\": 2,\n    \"idsParcelamentos\": [\"pp000000-0000-0000-0000-000000000001\"],\n    \"idsDespesasAvulsas\": [\"dd000001-avulsa-0000-0000-000000000001\", \"dd000001-avulsa-0000-0000-000000000002\"]\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "4. Desfazer Importação",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"idsParcelamentos\": [\"pp000000-0000-0000-0000-000000000001\"],\n  \"idsDespesasAvulsas\": [\"dd000001-avulsa-0000-0000-000000000001\"]\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/importar-csv/desfazer", "host": ["{{baseUrl}}"], "path": ["api", "importar-csv", "desfazer"] },
+						"description": "Remove despesas e parcelamentos criados por uma importação.\n\n**Requer autenticação.**\n\nUse os IDs retornados pelo endpoint `Confirmar`."
+					},
+					"response": [
+						{
+							"name": "Importação desfeita",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Importação desfeita com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🛡️ Admin",
+			"description": "Endpoints administrativos.\n\n⚠️ **Requerem cargo `admin`**, exceto o Setup inicial.\n\n**Como obter cargo admin:**\n1. Rode `POST /api/admin/setup` (só funciona uma vez, se não houver nenhum admin)\n2. Ou use `PUT /api/admin/usuarios/:id/cargo` com um admin existente",
+			"item": [
+				{
+					"name": "Setup do Primeiro Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if ((pm.response.code === 200 || pm.response.code === 201) && res.data?.token) {",
+									"    pm.collectionVariables.set('token', res.data.token);",
+									"    if (res.data.usuario?.Id_Usuario) pm.collectionVariables.set('userId', res.data.usuario.Id_Usuario);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Nome\": \"Admin\",\n  \"Email\": \"admin@financeapp.com\",\n  \"Senha\": \"admin123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/admin/setup", "host": ["{{baseUrl}}"], "path": ["api", "admin", "setup"] },
+						"description": "Cria o primeiro administrador do sistema.\n\n**Não requer autenticação.**\n\n⚠️ **Só funciona uma vez.** Retorna 403 se já existir algum administrador cadastrado."
+					},
+					"response": [
+						{
+							"name": "Admin criado",
+							"status": "Created", "code": 201,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"usuario\": {\n      \"Id_Usuario\": \"admin000-0000-0000-0000-000000000001\",\n      \"Nome\": \"Admin\",\n      \"Email\": \"admin@financeapp.com\",\n      \"Cargo\": \"admin\"\n    },\n    \"token\": \"eyJhbGciOiJIUzI1NiIs...\"\n  }\n}"
+						},
+						{
+							"name": "Admin já existe",
+							"status": "Forbidden", "code": 403,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Já existe um administrador cadastrado\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Estatísticas do Sistema",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/admin/stats", "host": ["{{baseUrl}}"], "path": ["api", "admin", "stats"] },
+						"description": "Retorna estatísticas gerais do sistema.\n\n**Requer cargo: admin**"
+					},
+					"response": [
+						{
+							"name": "Estatísticas",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"totalUsuarios\": 42,\n    \"usuariosVerificados\": 38,\n    \"totalDespesas\": 125430.50,\n    \"totalRendas\": 210000.00\n  }\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Todos os Usuários",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/admin/usuarios", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios"] },
+						"description": "Lista todos os usuários do sistema.\n\n**Requer cargo: admin**"
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Usuário (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{userId}}"] },
+						"description": "Busca detalhes de um usuário.\n\n**Requer cargo: admin**"
+					},
+					"response": []
+				},
+				{
+					"name": "Alterar Cargo do Usuário",
+					"request": {
+						"method": "PUT",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cargo\": \"admin\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{userId}}/cargo", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{userId}}", "cargo"] },
+						"description": "Altera o cargo de um usuário.\n\n**Requer cargo: admin**\n\n**Valores:** `usuario` ou `admin`"
+					},
+					"response": [
+						{
+							"name": "Cargo alterado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"Id_Usuario\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"Nome\": \"João Silva\",\n    \"Cargo\": \"admin\"\n  }\n}"
+						},
+						{
+							"name": "Campo obrigatório",
+							"status": "Bad Request", "code": 400,
+							"body": "{\n  \"success\": false,\n  \"error\": \"Campo \\\"cargo\\\" é obrigatório\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Deletar Usuário (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{userId}}"] },
+						"description": "Deleta qualquer usuário do sistema.\n\n**Requer cargo: admin**"
+					},
+					"response": [
+						{
+							"name": "Usuário deletado",
+							"status": "OK", "code": 200,
+							"body": "{\n  \"success\": true,\n  \"data\": {\n    \"mensagem\": \"Usuário deletado com sucesso\"\n  }\n}"
+						}
+					]
+				}
+			]
+		}
+	]
+}
