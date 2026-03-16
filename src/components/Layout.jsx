@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   LayoutDashboard, Receipt, TrendingUp, CreditCard, CalendarClock,
   Target, FileBarChart, LogOut, Wallet, Menu, ShieldCheck, FileUp, Users,
-  BellDot, Sparkles
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -266,26 +265,13 @@ export default function Layout({ children }) {
               <p style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--color-text-muted)' }}>
                 Workspace
               </p>
-              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <h2 style={{ fontSize: '1.05rem', fontWeight: 700 }}>
                 {pageName}
-                <Sparkles size={14} style={{ color: 'var(--color-primary)' }} />
               </h2>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button className="btn-icon" title="Notificações" style={{ position: 'relative' }}>
-              <BellDot size={16} />
-              <span style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: 'var(--color-primary)',
-                position: 'absolute',
-                top: 7,
-                right: 8,
-              }} />
-            </button>
             <button
               className="btn-icon"
               onClick={logout}

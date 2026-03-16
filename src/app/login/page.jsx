@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Wallet, Mail, Lock, ArrowRight, Eye, EyeOff, ShieldCheck, Sparkles } from 'lucide-react'
+import { Wallet, Mail, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 
 export default function Login() {
   const { login } = useAuth()
@@ -44,7 +44,7 @@ export default function Login() {
             borderRight: '1px solid var(--color-border)',
           }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '.75rem', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 18 }}>
-              <Sparkles size={14} /> Plataforma Financeira Inteligente
+              Plataforma Financeira Inteligente
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1.15, marginBottom: 12 }}>
               Controle total das suas finanças com uma interface de alto nível.
