@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Wallet, Mail, Lock, User, ArrowRight, Eye, EyeOff, Rocket, Sparkles } from 'lucide-react'
+import { Wallet, Mail, Lock, User, ArrowRight, Eye, EyeOff, Rocket } from 'lucide-react'
 
 export default function Register() {
   const { register } = useAuth()
@@ -49,7 +49,7 @@ export default function Register() {
             borderRight: '1px solid var(--color-border)',
           }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '.75rem', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 18 }}>
-              <Sparkles size={14} /> Ambiente profissional de gestão financeira
+              Ambiente profissional de gestão financeira
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, lineHeight: 1.15, marginBottom: 12 }}>
               Crie sua conta e eleve o nível do seu controle financeiro.

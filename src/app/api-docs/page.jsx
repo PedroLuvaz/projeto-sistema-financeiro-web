@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import yaml from 'js-yaml'
-import { BookOpenText, Sparkles } from 'lucide-react'
+import { BookOpenText } from 'lucide-react'
 import 'swagger-ui-react/swagger-ui.css'
 
 const SwaggerUI = dynamic(() => import('swagger-ui-react'), { ssr: false })
@@ -39,9 +39,8 @@ export default function ApiDocs() {
               <BookOpenText size={20} />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h1 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
                 API Documentation
-                <Sparkles size={14} style={{ color: 'var(--color-primary)' }} />
               </h1>
               <p style={{ fontSize: '.85rem', color: 'var(--color-text-muted)' }}>
                 Referência interativa OpenAPI com o novo padrão visual do produto.

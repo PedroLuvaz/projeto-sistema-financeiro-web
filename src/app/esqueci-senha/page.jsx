@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/services/api'
-import { Mail, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react'
+import { Mail, ArrowRight, ShieldAlert } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EsqueciSenha() {
@@ -36,7 +36,7 @@ export default function EsqueciSenha() {
             background: 'linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 16%, transparent), color-mix(in srgb, var(--color-accent) 10%, transparent))',
           }}>
             <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center', color: 'var(--color-primary)', fontSize: '.75rem', fontWeight: 700, marginBottom: 16 }}>
-              <Sparkles size={14} /> Recuperação segura
+              Recuperação segura
             </div>
             <h1 style={{ fontSize: '1.85rem', lineHeight: 1.18, fontWeight: 800, marginBottom: 12 }}>
               Vamos recuperar seu acesso com segurança.
