@@ -116,8 +116,8 @@ export default function Dashboard() {
                     formatter={(v) => formatCurrency(v)}
                   />
                   <Legend
-                    wrapperStyle={{ fontSize: '.8rem', color: '#94a3b8' }}
-                    formatter={(val) => <span style={{ color: '#cbd5e1' }}>{val}</span>}
+                    wrapperStyle={{ fontSize: '.8rem', color: 'var(--color-text-secondary)' }}
+                    formatter={(val) => <span style={{ color: 'var(--color-text-secondary)' }}>{val}</span>}
                   />
                 </PieChart>
               </ResponsiveContainer>

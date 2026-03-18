@@ -84,7 +84,7 @@ export default function Parcelamentos() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <AlertTriangle size={22} />
             <div>
-              <div style={{ fontSize: '.85rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>Dívidas Futuras (Total a Pagar)</div>
+              <div style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>Dívidas Futuras (Total a Pagar)</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{formatCurrency(dividasFuturas)}</div>
             </div>
           </div>
@@ -98,7 +98,7 @@ export default function Parcelamentos() {
               <button key={t.id} onClick={() => setTab(t.id)} style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: tab === t.id ? 'var(--color-primary-light)' : 'var(--color-text-muted)',
+                color: tab === t.id ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                 borderBottom: tab === t.id ? '2px solid var(--color-primary)' : '2px solid transparent',
                 fontWeight: tab === t.id ? 600 : 400, fontSize: '.88rem', transition: 'all .2s',
               }}>
@@ -246,7 +246,7 @@ export default function Parcelamentos() {
                       <div style={{ fontWeight: 700, fontSize: '1rem' }}>
                         {getMonthName(parseInt(cronMes))} {cronAno}
                       </div>
-                      <span style={{ fontWeight: 700, color: 'var(--color-primary-light)' }}>{formatCurrency(m.total)}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{formatCurrency(m.total)}</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {m.parcelas?.map((p, j) => (

@@ -146,7 +146,10 @@ export default function Relatorios() {
                       contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 10, color: '#f1f5f9', fontSize: '.85rem' }}
                       formatter={(v) => formatCurrency(v)}
                     />
-                    <Legend wrapperStyle={{ fontSize: '.82rem' }} />
+                    <Legend
+                      wrapperStyle={{ fontSize: '.82rem', color: 'var(--color-text-secondary)' }}
+                      formatter={(val) => <span style={{ color: 'var(--color-text-secondary)' }}>{val}</span>}
+                    />
                     <Line type="monotone" dataKey="Rendas" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                     <Line type="monotone" dataKey="Despesas" stroke="#f43f5e" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                     <Line type="monotone" dataKey="Saldo" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />

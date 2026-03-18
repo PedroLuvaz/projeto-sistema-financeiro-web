@@ -16,11 +16,11 @@
     --color-surface-2: #ffffff;
     --color-surface-3: #eef2ff;
     --color-surface-elevated: rgba(255, 255, 255, 0.72);
-    --color-border: #dbe2ff;
+    --color-border: #cbd5e1;
 
     --color-text: #0f172a;
-    --color-text-secondary: #334155;
-    --color-text-muted: #64748b;
+    --color-text-secondary: #1e293b;
+    --color-text-muted: #475569;
 
     --shadow-sm: 0 6px 20px rgba(79, 70, 229, 0.08);
     --shadow-md: 0 18px 45px rgba(79, 70, 229, 0.14);
