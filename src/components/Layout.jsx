@@ -271,15 +271,6 @@ export default function Layout({ children }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              className="btn-icon"
-              onClick={logout}
-              title="Sair"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
         </header>
 
         <section style={{ padding: '24px clamp(14px, 3vw, 30px) 30px' }}>
