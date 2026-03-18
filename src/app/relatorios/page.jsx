@@ -58,8 +58,8 @@ export default function Relatorios() {
   })) || []
 
   const catData = relatorio?.despesas_por_categoria?.map(c => ({
-    name: c.categoria, value: Number(c.total),
-  })).sort((a, b) => b.value - a.value) || []
+    name: c.categoria, valor: Number(c.total),
+  })).sort((a, b) => b.valor - a.valor) || []
 
   if (!user) return null
 
@@ -169,10 +169,18 @@ export default function Relatorios() {
                       <XAxis type="number" stroke="#64748b" fontSize={11} tickFormatter={v => `R$${v}`} />
                       <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={11} width={100} />
                       <Tooltip
-                        contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 10, color: '#f1f5f9', fontSize: '.85rem' }}
+                        contentStyle={{
+                          background: 'var(--color-surface-2)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 10,
+                          color: 'var(--color-text)',
+                          fontSize: '.85rem'
+                        }}
+                        labelStyle={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}
+                        itemStyle={{ color: 'var(--color-text)', fontWeight: 600 }}
                         formatter={(v) => formatCurrency(v)}
                       />
-                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      <Bar dataKey="valor" name="Valor" radius={[0, 4, 4, 0]}>
                         {catData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                       </Bar>
                     </BarChart>
