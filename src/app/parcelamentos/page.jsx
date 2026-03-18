@@ -38,7 +38,11 @@ export default function Parcelamentos() {
         api.get(`/parcelamentos/usuario/${user.Id_Usuario}/cronograma`),
       ])
       setParcelamentos(pResp.data.data)
-      setDividasFuturas(dResp.data.data.total_dividas_futuras || 0)
+      const dividasData = dResp?.data?.data
+      const totalDividasFuturas = typeof dividasData === 'number'
+        ? dividasData
+        : Number(dividasData?.total_dividas_futuras || 0)
+      setDividasFuturas(totalDividasFuturas)
       setCronograma(cResp.data.data)
     } catch { }
     setLoading(false)
