@@ -112,7 +112,15 @@ export default function Dashboard() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 10, color: '#f1f5f9', fontSize: '.85rem' }}
+                    contentStyle={{
+                      background: 'var(--color-surface-2)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 10,
+                      color: 'var(--color-text)',
+                      fontSize: '.85rem'
+                    }}
+                    labelStyle={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}
+                    itemStyle={{ color: 'var(--color-text)', fontWeight: 600 }}
                     formatter={(v) => formatCurrency(v)}
                   />
                   <Legend
