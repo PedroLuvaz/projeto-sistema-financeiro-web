@@ -48,7 +48,12 @@ export default (sequelize) => {
   }, {
     tableName: 'renda',
     timestamps: false,
-    underscored: true
+    underscored: true,
+    indexes: [
+      // Performance indexes for common queries
+      { name: 'idx_renda_usuario_data', fields: ['id_usuario', 'data'] },
+      { name: 'idx_renda_usuario_fixa', fields: ['id_usuario', 'fixa'] }
+    ]
   })
 
   Renda.associate = (models) => {

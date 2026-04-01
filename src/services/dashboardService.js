@@ -2,114 +2,170 @@ import { Op } from 'sequelize'
 import despesaService from '@/services/despesaService.js'
 import rendaService from '@/services/rendaService.js'
 import models from '@/models/index.js'
+import cacheService, { CACHE_KEYS, TTL } from './cacheService.js'
 
-const { Despesa, Renda, ContaCartao } = models
+const { Despesa, Renda, ContaCartao, sequelize } = models
 
 class DashboardService {
   async resumoMensal(idUsuario, mes, ano) {
-    const filtros = { mes, ano }
+    const cacheKey = cacheService.generateKey(CACHE_KEYS.DASHBOARD_RESUMO, idUsuario, { mes, ano })
+    
+    return cacheService.getOrSet(cacheKey, async () => {
+      const filtros = { mes, ano }
 
-    const [totalRendas, totalDespesas, despesasPorCategoria, topDespesas] = await Promise.all([
-      rendaService.calcularTotalPorPeriodo(idUsuario, filtros),
-      despesaService.calcularTotalPorPeriodo(idUsuario, filtros),
-      despesaService.calcularPorCategoria(idUsuario, filtros),
-      despesaService.topDespesas(idUsuario, filtros, 5)
-    ])
-
-    const saldoLiquido = parseFloat((totalRendas - totalDespesas).toFixed(2))
-
-    return {
-      mes: parseInt(mes),
-      ano: parseInt(ano),
-      total_rendas: totalRendas,
-      total_despesas: totalDespesas,
-      saldo_liquido: saldoLiquido,
-      despesas_por_categoria: despesasPorCategoria,
-      top_5_despesas: topDespesas
-    }
-  }
-
-  async relatorioAnual(idUsuario, ano) {
-    const resumosMensais = []
-    let totalRendasAnual = 0
-    let totalDespesasAnual = 0
-
-    for (let mes = 1; mes <= 12; mes++) {
-      const filtros = { mes: String(mes), ano: String(ano) }
-
-      const [totalRendas, totalDespesas] = await Promise.all([
+      const [totalRendas, totalDespesas, despesasPorCategoria, topDespesas] = await Promise.all([
         rendaService.calcularTotalPorPeriodo(idUsuario, filtros),
-        despesaService.calcularTotalPorPeriodo(idUsuario, filtros)
+        despesaService.calcularTotalPorPeriodo(idUsuario, filtros),
+        despesaService.calcularPorCategoria(idUsuario, filtros),
+        despesaService.topDespesas(idUsuario, filtros, 5)
       ])
 
-      totalRendasAnual += totalRendas
-      totalDespesasAnual += totalDespesas
+      const saldoLiquido = parseFloat((totalRendas - totalDespesas).toFixed(2))
 
-      resumosMensais.push({
-        mes,
+      return {
+        mes: parseInt(mes),
+        ano: parseInt(ano),
         total_rendas: totalRendas,
         total_despesas: totalDespesas,
-        saldo: parseFloat((totalRendas - totalDespesas).toFixed(2))
-      })
-    }
+        saldo_liquido: saldoLiquido,
+        despesas_por_categoria: despesasPorCategoria,
+        top_5_despesas: topDespesas
+      }
+    }, TTL.MEDIUM)
+  }
 
-    const rendasAno = await rendaService.listarPorUsuario(idUsuario, {
-      dataInicio: `${ano}-01-01`,
-      dataFim: `${ano}-12-31`
-    })
+  /**
+   * OPTIMIZED: Eliminates N+1 queries by:
+   * 1. Using single queries with GROUP BY for monthly totals
+   * 2. Using eager loading with includes for account data
+   * 3. Fetching all data in parallel where possible
+   */
+  async relatorioAnual(idUsuario, ano) {
+    const cacheKey = cacheService.generateKey(CACHE_KEYS.DASHBOARD_RELATORIO, idUsuario, { ano })
+    
+    return cacheService.getOrSet(cacheKey, async () => {
+      const primeiroDiaAno = `${ano}-01-01`
+      const ultimoDiaAno = `${ano}-12-31`
 
-    const primeiroDiaAno = `${ano}-01-01`
-    const ultimoDiaAno = `${ano}-12-31`
-
-    const contas = await ContaCartao.findAll({
-      where: { Id_Usuario: idUsuario }
-    })
-
-    const despesasPorConta = []
-
-    for (const conta of contas) {
-      const despesas = await Despesa.findAll({
-        where: {
-          Id_Usuario: idUsuario,
-          Id_Conta: conta.Id_Conta,
-          Data: { [Op.between]: [primeiroDiaAno, ultimoDiaAno] }
-        },
-        order: [['Data', 'DESC']]
-      })
-
-      const totalConta = despesas.reduce((acc, d) => acc + parseFloat(d.Valor_Parcela), 0)
-
-      if (despesas.length > 0) {
-        despesasPorConta.push({
-          conta: {
-            Id_Conta: conta.Id_Conta,
-            Nome_Conta: conta.Nome_Conta,
-            Tipo: conta.Tipo,
-            Cor_Hex: conta.Cor_Hex
+      // Fetch all data in parallel with optimized queries
+      const [
+        rendasMensais,
+        despesasMensais,
+        despesasPorContaRaw,
+        categorias,
+        rendasAno
+      ] = await Promise.all([
+        // Monthly income totals - single query with GROUP BY
+        Renda.findAll({
+          where: {
+            Id_Usuario: idUsuario,
+            Data: { [Op.between]: [primeiroDiaAno, ultimoDiaAno] }
           },
-          total: parseFloat(totalConta.toFixed(2)),
-          quantidade: despesas.length
+          attributes: [
+            [sequelize.fn('EXTRACT', sequelize.literal('MONTH FROM "Data"')), 'mes'],
+            [sequelize.fn('SUM', sequelize.col('Valor_Renda')), 'total']
+          ],
+          group: [sequelize.fn('EXTRACT', sequelize.literal('MONTH FROM "Data"'))],
+          raw: true
+        }),
+        
+        // Monthly expense totals - single query with GROUP BY
+        Despesa.findAll({
+          where: {
+            Id_Usuario: idUsuario,
+            Data: { [Op.between]: [primeiroDiaAno, ultimoDiaAno] }
+          },
+          attributes: [
+            [sequelize.fn('EXTRACT', sequelize.literal('MONTH FROM "Data"')), 'mes'],
+            [sequelize.fn('SUM', sequelize.col('Valor_Parcela')), 'total']
+          ],
+          group: [sequelize.fn('EXTRACT', sequelize.literal('MONTH FROM "Data"'))],
+          raw: true
+        }),
+        
+        // Expenses by account - single query with GROUP BY and JOIN
+        Despesa.findAll({
+          where: {
+            Id_Usuario: idUsuario,
+            Data: { [Op.between]: [primeiroDiaAno, ultimoDiaAno] }
+          },
+          attributes: [
+            'Id_Conta',
+            [sequelize.fn('SUM', sequelize.col('Valor_Parcela')), 'total'],
+            [sequelize.fn('COUNT', sequelize.col('Id_Despesa')), 'quantidade']
+          ],
+          include: [{
+            model: ContaCartao,
+            as: 'conta',
+            attributes: ['Id_Conta', 'Nome_Conta', 'Tipo', 'Cor_Hex']
+          }],
+          group: ['Id_Conta', 'conta.Id_Conta', 'conta.Nome_Conta', 'conta.Tipo', 'conta.Cor_Hex'],
+          raw: false
+        }),
+        
+        // Category totals
+        despesaService.calcularPorCategoria(idUsuario, {
+          dataInicio: primeiroDiaAno,
+          dataFim: ultimoDiaAno
+        }),
+        
+        // All incomes for the year (for detailed listing)
+        rendaService.listarPorUsuario(idUsuario, {
+          dataInicio: primeiroDiaAno,
+          dataFim: ultimoDiaAno
+        })
+      ])
+
+      // Build monthly summary from grouped results
+      const rendasMap = new Map(rendasMensais.map(r => [parseInt(r.mes), parseFloat(r.total || 0)]))
+      const despesasMap = new Map(despesasMensais.map(d => [parseInt(d.mes), parseFloat(d.total || 0)]))
+      
+      let totalRendasAnual = 0
+      let totalDespesasAnual = 0
+      const resumosMensais = []
+
+      for (let mes = 1; mes <= 12; mes++) {
+        const totalRendas = rendasMap.get(mes) || 0
+        const totalDespesas = despesasMap.get(mes) || 0
+        
+        totalRendasAnual += totalRendas
+        totalDespesasAnual += totalDespesas
+
+        resumosMensais.push({
+          mes,
+          total_rendas: parseFloat(totalRendas.toFixed(2)),
+          total_despesas: parseFloat(totalDespesas.toFixed(2)),
+          saldo: parseFloat((totalRendas - totalDespesas).toFixed(2))
         })
       }
-    }
 
-    const categorias = await despesaService.calcularPorCategoria(idUsuario, {
-      dataInicio: primeiroDiaAno,
-      dataFim: ultimoDiaAno
-    })
+      // Process expenses by account
+      const despesasPorConta = despesasPorContaRaw
+        .filter(d => d.conta)
+        .map(d => ({
+          conta: {
+            Id_Conta: d.conta.Id_Conta,
+            Nome_Conta: d.conta.Nome_Conta,
+            Tipo: d.conta.Tipo,
+            Cor_Hex: d.conta.Cor_Hex
+          },
+          total: parseFloat(parseFloat(d.dataValues?.total || d.total || 0).toFixed(2)),
+          quantidade: parseInt(d.dataValues?.quantidade || d.quantidade || 0)
+        }))
 
-    return {
-      ano: parseInt(ano),
-      resumo: {
-        total_rendas: parseFloat(totalRendasAnual.toFixed(2)),
-        total_despesas: parseFloat(totalDespesasAnual.toFixed(2)),
-        saldo_final: parseFloat((totalRendasAnual - totalDespesasAnual).toFixed(2))
-      },
-      evolucao_mensal: resumosMensais,
-      rendas: rendasAno,
-      despesas_por_conta: despesasPorConta,
-      despesas_por_categoria: categorias
-    }
+      return {
+        ano: parseInt(ano),
+        resumo: {
+          total_rendas: parseFloat(totalRendasAnual.toFixed(2)),
+          total_despesas: parseFloat(totalDespesasAnual.toFixed(2)),
+          saldo_final: parseFloat((totalRendasAnual - totalDespesasAnual).toFixed(2))
+        },
+        evolucao_mensal: resumosMensais,
+        rendas: rendasAno,
+        despesas_por_conta: despesasPorConta,
+        despesas_por_categoria: categorias
+      }
+    }, TTL.LONG)
   }
 
   async exportarRelatorioAnualCSV(idUsuario, ano) {

@@ -1,5 +1,6 @@
 import { Op } from 'sequelize'
 import models from '@/models/index.js'
+import cacheService, { CACHE_KEYS, TTL } from './cacheService.js'
 
 const { Despesa, ContaCartao, ParcelamentoAgrupador, sequelize } = models
 
@@ -17,6 +18,8 @@ class DespesaService {
         Categoria: dados.Categoria,
         Numero_Parcela: 1
       })
+      // Invalidate cache for this user
+      cacheService.invalidateUser(dados.Id_Usuario)
       return await this.buscarPorId(despesa.Id_Despesa)
     }
 
@@ -57,6 +60,8 @@ class DespesaService {
       }
 
       await transaction.commit()
+      // Invalidate cache for this user
+      cacheService.invalidateUser(dados.Id_Usuario)
       return { parcelamento, despesas: despesasCriadas }
     } catch (error) {
       await transaction.rollback()
@@ -88,7 +93,7 @@ class DespesaService {
     return despesa
   }
 
-  async listarPorUsuario(idUsuario, filtros = {}) {
+  _buildWhereClause(idUsuario, filtros = {}) {
     const where = { Id_Usuario: idUsuario }
 
     if (filtros.mes && filtros.ano) {
@@ -112,7 +117,13 @@ class DespesaService {
       where.Id_Conta = filtros.idConta
     }
 
-    const despesas = await Despesa.findAll({
+    return where
+  }
+
+  async listarPorUsuario(idUsuario, filtros = {}, options = {}) {
+    const where = this._buildWhereClause(idUsuario, filtros)
+    
+    const queryOptions = {
       where,
       include: [
         {
@@ -127,39 +138,115 @@ class DespesaService {
         }
       ],
       order: [['Data', 'DESC']]
-    })
+    }
+
+    // Add pagination if provided
+    if (options.limit) {
+      queryOptions.limit = options.limit
+    }
+    if (options.offset) {
+      queryOptions.offset = options.offset
+    }
+
+    const despesas = await Despesa.findAll(queryOptions)
     return despesas
   }
 
+  /**
+   * OPTIMIZED: Uses SQL SUM instead of loading all records
+   */
   async calcularTotalPorPeriodo(idUsuario, filtros = {}) {
-    const despesas = await this.listarPorUsuario(idUsuario, filtros)
-    const total = despesas.reduce((acc, d) => acc + parseFloat(d.Valor_Parcela), 0)
-    return parseFloat(total.toFixed(2))
+    const cacheKey = cacheService.generateKey(CACHE_KEYS.DESPESAS_LISTA, idUsuario, { ...filtros, type: 'total' })
+    
+    return cacheService.getOrSet(cacheKey, async () => {
+      const where = this._buildWhereClause(idUsuario, filtros)
+      
+      const result = await Despesa.findOne({
+        where,
+        attributes: [
+          [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('Valor_Parcela')), 0), 'total']
+        ],
+        raw: true
+      })
+      
+      return parseFloat(parseFloat(result?.total || 0).toFixed(2))
+    }, TTL.SHORT)
   }
 
+  /**
+   * OPTIMIZED: Uses SQL GROUP BY instead of in-memory aggregation
+   */
   async calcularPorCategoria(idUsuario, filtros = {}) {
-    const despesas = await this.listarPorUsuario(idUsuario, filtros)
-    const porCategoria = {}
-    despesas.forEach(d => {
-      const cat = d.Categoria
-      if (!porCategoria[cat]) porCategoria[cat] = 0
-      porCategoria[cat] += parseFloat(d.Valor_Parcela)
-    })
-    return Object.entries(porCategoria).map(([categoria, total]) => ({
-      categoria,
-      total: parseFloat(total.toFixed(2))
-    }))
+    const cacheKey = cacheService.generateKey(CACHE_KEYS.DESPESAS_CATEGORIA, idUsuario, filtros)
+    
+    return cacheService.getOrSet(cacheKey, async () => {
+      const where = this._buildWhereClause(idUsuario, filtros)
+      
+      const results = await Despesa.findAll({
+        where,
+        attributes: [
+          'Categoria',
+          [sequelize.fn('SUM', sequelize.col('Valor_Parcela')), 'total']
+        ],
+        group: ['Categoria'],
+        raw: true
+      })
+      
+      return results.map(r => ({
+        categoria: r.Categoria,
+        total: parseFloat(parseFloat(r.total || 0).toFixed(2))
+      }))
+    }, TTL.MEDIUM)
   }
 
+  /**
+   * OPTIMIZED: Uses SQL LIMIT and ORDER instead of loading all then slicing
+   */
   async topDespesas(idUsuario, filtros = {}, limite = 5) {
-    const despesas = await this.listarPorUsuario(idUsuario, filtros)
-    return despesas
-      .sort((a, b) => parseFloat(b.Valor_Parcela) - parseFloat(a.Valor_Parcela))
-      .slice(0, limite)
+    const cacheKey = cacheService.generateKey(CACHE_KEYS.DESPESAS_TOP, idUsuario, { ...filtros, limite })
+    
+    return cacheService.getOrSet(cacheKey, async () => {
+      const where = this._buildWhereClause(idUsuario, filtros)
+      
+      const despesas = await Despesa.findAll({
+        where,
+        include: [
+          {
+            model: ContaCartao,
+            as: 'conta',
+            attributes: ['Id_Conta', 'Nome_Conta', 'Tipo', 'Cor_Hex']
+          }
+        ],
+        order: [['Valor_Parcela', 'DESC']],
+        limit: limite
+      })
+      
+      return despesas
+    }, TTL.MEDIUM)
   }
 
   async exportarCSV(idUsuario, filtros = {}) {
-    const despesas = await this.listarPorUsuario(idUsuario, filtros)
+    // For export, we need specific fields only - optimized query
+    const where = this._buildWhereClause(idUsuario, filtros)
+    
+    const despesas = await Despesa.findAll({
+      where,
+      attributes: ['Descricao_Despesa', 'Valor_Parcela', 'Data', 'Categoria', 'Numero_Parcela'],
+      include: [
+        {
+          model: ContaCartao,
+          as: 'conta',
+          attributes: ['Nome_Conta']
+        },
+        {
+          model: ParcelamentoAgrupador,
+          as: 'parcelamento',
+          attributes: ['Qtd_Parcelas']
+        }
+      ],
+      order: [['Data', 'DESC']]
+    })
+    
     const header = 'Descricao;Valor;Data;Categoria;Conta;Parcela\n'
     const linhas = despesas.map(d => {
       return [
@@ -177,21 +264,26 @@ class DespesaService {
   async atualizar(id, dados) {
     const despesa = await this.buscarPorId(id)
     await despesa.update(dados)
+    // Invalidate cache for this user
+    cacheService.invalidateUser(despesa.Id_Usuario)
     return await this.buscarPorId(id)
   }
 
   async deletar(id, deletarParcelamento = false) {
     const despesa = await this.buscarPorId(id)
+    const userId = despesa.Id_Usuario
 
     if (deletarParcelamento && despesa.Id_Parcelamento) {
       const parcelamento = await ParcelamentoAgrupador.findByPk(despesa.Id_Parcelamento)
       if (parcelamento) {
         await parcelamento.destroy()
+        cacheService.invalidateUser(userId)
         return { mensagem: 'Parcelamento e todas as parcelas deletados com sucesso' }
       }
     }
 
     await despesa.destroy()
+    cacheService.invalidateUser(userId)
     return { mensagem: 'Despesa deletada com sucesso' }
   }
 }

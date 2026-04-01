@@ -69,7 +69,14 @@ export default (sequelize) => {
   }, {
     tableName: 'despesa',
     timestamps: false,
-    underscored: true
+    underscored: true,
+    indexes: [
+      // Performance indexes for common queries
+      { name: 'idx_despesa_usuario_data', fields: ['id_usuario', 'data'] },
+      { name: 'idx_despesa_usuario_categoria', fields: ['id_usuario', 'categoria'] },
+      { name: 'idx_despesa_conta_data', fields: ['id_conta', 'data'] },
+      { name: 'idx_despesa_parcelamento', fields: ['id_parcelamento'] }
+    ]
   })
 
   Despesa.associate = (models) => {

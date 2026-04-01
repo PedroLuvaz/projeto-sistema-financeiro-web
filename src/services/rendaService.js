@@ -1,7 +1,8 @@
 import { Op } from 'sequelize'
 import models from '@/models/index.js'
+import cacheService, { CACHE_KEYS, TTL } from './cacheService.js'
 
-const { Renda } = models
+const { Renda, sequelize } = models
 
 // Gera data YYYY-MM-DD para um mês/ano com o dia informado (clampado ao último dia do mês)
 function gerarData(ano, mes, dia) {
@@ -15,7 +16,9 @@ class RendaService {
     const { Fixa, Dia_Vencimento, Data, Id_Usuario, Descricao_Renda, Valor_Renda } = dados
 
     if (!Fixa) {
-      return Renda.create({ Id_Usuario, Descricao_Renda, Valor_Renda, Data, Fixa: false })
+      const renda = await Renda.create({ Id_Usuario, Descricao_Renda, Valor_Renda, Data, Fixa: false })
+      cacheService.invalidateUser(Id_Usuario)
+      return renda
     }
 
     // Renda fixa: gera 12 meses a partir do mês da data informada
@@ -40,6 +43,7 @@ class RendaService {
     }
 
     const criadas = await Renda.bulkCreate(registros, { returning: true })
+    cacheService.invalidateUser(Id_Usuario)
     return criadas
   }
 
@@ -53,7 +57,7 @@ class RendaService {
     return renda
   }
 
-  async listarPorUsuario(idUsuario, filtros = {}) {
+  _buildWhereClause(idUsuario, filtros = {}) {
     const where = { Id_Usuario: idUsuario }
 
     if (filtros.mes && filtros.ano) {
@@ -70,13 +74,33 @@ class RendaService {
       where.Data = { [Op.lte]: filtros.dataFim }
     }
 
+    return where
+  }
+
+  async listarPorUsuario(idUsuario, filtros = {}) {
+    const where = this._buildWhereClause(idUsuario, filtros)
     return Renda.findAll({ where, order: [['Data', 'DESC']] })
   }
 
+  /**
+   * OPTIMIZED: Uses SQL SUM instead of loading all records
+   */
   async calcularTotalPorPeriodo(idUsuario, filtros = {}) {
-    const rendas = await this.listarPorUsuario(idUsuario, filtros)
-    const total = rendas.reduce((acc, r) => acc + parseFloat(r.Valor_Renda), 0)
-    return parseFloat(total.toFixed(2))
+    const cacheKey = cacheService.generateKey(CACHE_KEYS.RENDAS_LISTA, idUsuario, { ...filtros, type: 'total' })
+    
+    return cacheService.getOrSet(cacheKey, async () => {
+      const where = this._buildWhereClause(idUsuario, filtros)
+      
+      const result = await Renda.findOne({
+        where,
+        attributes: [
+          [sequelize.fn('COALESCE', sequelize.fn('SUM', sequelize.col('Valor_Renda')), 0), 'total']
+        ],
+        raw: true
+      })
+      
+      return parseFloat(parseFloat(result?.total || 0).toFixed(2))
+    }, TTL.SHORT)
   }
 
   async atualizar(id, dados) {
@@ -103,16 +127,19 @@ class RendaService {
         }
         await r.update(update)
       }
+      cacheService.invalidateUser(renda.Id_Usuario)
       return rendas[0]
     }
 
     const { atualizarTodas, ...rest } = dados
     await renda.update(rest)
+    cacheService.invalidateUser(renda.Id_Usuario)
     return renda
   }
 
   async deletar(id, deletarTodas = false) {
     const renda = await this.buscarPorId(id)
+    const userId = renda.Id_Usuario
 
     if (deletarTodas && renda.Fixa) {
       await Renda.destroy({
@@ -124,10 +151,12 @@ class RendaService {
           Data: { [Op.gte]: renda.Data },
         }
       })
+      cacheService.invalidateUser(userId)
       return { mensagem: 'Rendas fixas deletadas com sucesso' }
     }
 
     await renda.destroy()
+    cacheService.invalidateUser(userId)
     return { mensagem: 'Renda deletada com sucesso' }
   }
 }

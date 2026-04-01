@@ -51,7 +51,11 @@ export default (sequelize) => {
   }, {
     tableName: 'conta_cartao',
     timestamps: false,
-    underscored: true
+    underscored: true,
+    indexes: [
+      // Performance index for common queries
+      { name: 'idx_conta_usuario', fields: ['id_usuario'] }
+    ]
   })
 
   ContaCartao.associate = (models) => {

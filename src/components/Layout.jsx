@@ -3,11 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { cn } from '@/utils/cn'
+import { Button } from './Button'
 import {
   LayoutDashboard, Receipt, TrendingUp, CreditCard, CalendarClock,
   Target, FileBarChart, LogOut, Wallet, Menu, ShieldCheck, FileUp, Users,
+  ChevronLeft, X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -28,6 +31,21 @@ export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
+
   const isActive = (to) => {
     if (to === '/') return pathname === '/'
     return pathname.startsWith(to)
@@ -39,274 +57,209 @@ export default function Layout({ children }) {
     return found?.label || 'FinanceApp'
   }, [pathname])
 
+  const NavLink = ({ to, icon: Icon, label, active }) => (
+    <Link
+      href={to}
+      className={cn(
+        'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium',
+        'transition-all duration-200 border border-transparent',
+        collapsed ? 'justify-center' : 'justify-start',
+        active 
+          ? 'bg-[color-mix(in_srgb,var(--color-primary)_13%,transparent)] text-[var(--color-primary)] border-[color-mix(in_srgb,var(--color-primary)_35%,transparent)] font-semibold' 
+          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-3)]/60 hover:text-[var(--color-text)]'
+      )}
+      title={collapsed ? label : undefined}
+    >
+      <Icon 
+        size={18} 
+        className={cn(
+          'flex-shrink-0 transition-transform duration-200',
+          'group-hover:scale-110',
+          active && 'text-[var(--color-primary)]'
+        )} 
+      />
+      {!collapsed && (
+        <span className="truncate">{label}</span>
+      )}
+      {active && !collapsed && (
+        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] animate-pulse" />
+      )}
+    </Link>
+  )
+
   return (
-    <div style={{
-      display: 'flex',
-      minHeight: '100vh',
-      background: 'transparent',
-      color: 'var(--color-text)',
-    }}>
+    <div className="flex min-h-screen bg-transparent text-[var(--color-text)]">
+      {/* Mobile Overlay */}
       {mobileOpen && (
-        <button
-          aria-label="Fechar menu"
+        <div
+          className="fixed inset-0 bg-[rgba(2,6,23,0.6)] backdrop-blur-sm z-40 lg:hidden fade-in"
           onClick={() => setMobileOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(2,6,23,0.6)',
-            border: 'none',
-            zIndex: 40,
-            display: 'none',
-          }}
-          className="layout-mobile-overlay"
         />
       )}
 
+      {/* Sidebar */}
       <aside
-        style={{
-          width: collapsed ? 84 : 270,
-          background: 'var(--color-surface-elevated)',
-          borderRight: '1px solid var(--color-border)',
-          backdropFilter: 'blur(18px)',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'width .25s ease, transform .25s ease',
-          overflow: 'hidden',
-          flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          zIndex: 45,
-        }}
-        className={`layout-sidebar ${mobileOpen ? 'open' : ''}`}
+        className={cn(
+          'fixed lg:sticky top-0 left-0 h-screen z-50',
+          'bg-[var(--color-surface-elevated)]/95 backdrop-blur-xl',
+          'border-r border-[var(--color-border)]',
+          'flex flex-col transition-all duration-300 ease-out',
+          'lg:translate-x-0',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          collapsed ? 'w-20' : 'w-72'
+        )}
       >
-        <div style={{
-          padding: '18px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          borderBottom: '1px solid var(--color-border)',
-        }}>
-          <div style={{
-            width: 42,
-            height: 42,
-            borderRadius: 13,
-            background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 10px 20px rgba(79,70,229,0.35)',
-          }}>
-            <Wallet size={21} color="#fff" />
+        {/* Logo Header */}
+        <div className="p-4 border-b border-[var(--color-border)] flex items-center gap-3">
+          <div className={cn(
+            'w-11 h-11 rounded-xl flex-shrink-0',
+            'bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)]',
+            'flex items-center justify-center',
+            'shadow-lg shadow-[var(--color-primary)]/30',
+            'hover-scale transition-transform'
+          )}>
+            <Wallet size={22} className="text-white" />
           </div>
 
           {!collapsed && (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '1.03rem', fontWeight: 800, letterSpacing: '-.02em' }}>
-                Finance<span style={{ color: 'var(--color-primary)' }}>App</span>
+            <div className="flex-1 min-w-0 slide-up">
+              <span className="text-base font-extrabold tracking-tight">
+                Finance<span className="text-[var(--color-primary)]">App</span>
               </span>
-              <span style={{ fontSize: '.69rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+              <span className="block text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest">
                 Gestão inteligente
               </span>
             </div>
           )}
 
-          <button
-            className="btn-icon"
-            onClick={() => setCollapsed((value) => !value)}
-            style={{ marginLeft: 'auto' }}
+          {/* Collapse Button - Desktop */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setCollapsed((v) => !v)}
+            className="hidden lg:flex ml-auto"
             title={collapsed ? 'Expandir menu' : 'Recolher menu'}
           >
-            <Menu size={16} />
-          </button>
+            <ChevronLeft size={16} className={cn(
+              'transition-transform duration-300',
+              collapsed && 'rotate-180'
+            )} />
+          </Button>
+
+          {/* Close Button - Mobile */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden ml-auto"
+          >
+            <X size={18} />
+          </Button>
         </div>
 
-        <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {navItems.map(({ to, icon: Icon, label }) => {
-            const active = isActive(to)
-            return (
-              <Link
-                key={to}
-                href={to}
-                onClick={() => setMobileOpen(false)}
-                className={`sidebar-item ${active ? 'active' : ''}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: collapsed ? '11px 0' : '11px 12px',
-                  justifyContent: collapsed ? 'center' : 'flex-start',
-                  borderRadius: 12,
-                  textDecoration: 'none',
-                  fontSize: '.875rem',
-                  fontWeight: active ? 700 : 500,
-                  color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                  border: '1px solid transparent',
-                }}
-              >
-                <Icon size={18} />
-                {!collapsed && label}
-              </Link>
-            )
-          })}
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
+          {navItems.map(({ to, icon, label }) => (
+            <NavLink 
+              key={to} 
+              to={to} 
+              icon={icon} 
+              label={label} 
+              active={isActive(to)} 
+            />
+          ))}
 
           {isAdmin && (
             <>
-              <div style={{ height: 1, background: 'var(--color-border)', margin: '10px 6px', opacity: 0.85 }} />
-              <Link
-                href="/admin"
-                onClick={() => setMobileOpen(false)}
-                className={`sidebar-item ${isActive('/admin') ? 'active' : ''}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: collapsed ? '11px 0' : '11px 12px',
-                  justifyContent: collapsed ? 'center' : 'flex-start',
-                  borderRadius: 12,
-                  textDecoration: 'none',
-                  fontSize: '.875rem',
-                  fontWeight: isActive('/admin') ? 700 : 500,
-                  color: isActive('/admin') ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                  border: '1px solid transparent',
-                }}
-              >
-                <ShieldCheck size={18} />
-                {!collapsed && 'Admin'}
-              </Link>
+              <div className="h-px bg-[var(--color-border)] my-3 mx-2" />
+              <NavLink 
+                to="/admin" 
+                icon={ShieldCheck} 
+                label="Admin" 
+                active={isActive('/admin')} 
+              />
             </>
           )}
         </nav>
 
-        <div style={{ padding: '12px', borderTop: '1px solid var(--color-border)' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            background: 'color-mix(in srgb, var(--color-surface-3) 70%, transparent)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 12,
-            padding: '10px 10px',
-          }}>
-            <div style={{
-              width: 35,
-              height: 35,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '.8rem',
-              fontWeight: 700,
-              flexShrink: 0,
-            }}>
+        {/* User Section */}
+        <div className="p-3 border-t border-[var(--color-border)]">
+          <div className={cn(
+            'flex items-center gap-3 p-3 rounded-xl',
+            'bg-[var(--color-surface-3)]/50 border border-[var(--color-border)]',
+            'hover:border-[var(--color-primary)]/20 transition-colors'
+          )}>
+            <div className={cn(
+              'w-9 h-9 rounded-lg flex-shrink-0',
+              'bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)]',
+              'flex items-center justify-center',
+              'text-white text-sm font-bold'
+            )}>
               {user?.Nome?.charAt(0)?.toUpperCase() || 'U'}
             </div>
 
             {!collapsed && (
               <>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{
-                    fontSize: '.8125rem',
-                    fontWeight: 700,
-                    color: 'var(--color-text)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold truncate text-[var(--color-text)]">
                     {user?.Nome}
                   </div>
-                  <div style={{
-                    fontSize: '.7rem',
-                    color: 'var(--color-text-muted)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}>
+                  <div className="text-[11px] text-[var(--color-text-muted)] truncate">
                     {user?.Email}
                   </div>
                 </div>
-                <button className="btn-icon" onClick={logout} title="Sair" style={{ width: 32, height: 32 }}>
-                  <LogOut size={15} />
-                </button>
+                <Button 
+                  variant="ghost" 
+                  size="icon-sm" 
+                  onClick={logout} 
+                  title="Sair"
+                  className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)]"
+                >
+                  <LogOut size={16} />
+                </Button>
               </>
             )}
           </div>
         </div>
       </aside>
 
-      <main style={{ flex: 1, minWidth: 0 }}>
-        <header style={{
-          height: 72,
-          borderBottom: '1px solid var(--color-border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 20px',
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
-          background: 'var(--color-surface-elevated)',
-          backdropFilter: 'blur(18px)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button
-              className="btn-icon"
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 flex flex-col">
+        {/* Header */}
+        <header className={cn(
+          'h-16 border-b border-[var(--color-border)]',
+          'flex items-center justify-between px-4 lg:px-6',
+          'sticky top-0 z-30',
+          'bg-[var(--color-surface-elevated)]/80 backdrop-blur-xl'
+        )}>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setMobileOpen(true)}
+              className="lg:hidden"
               aria-label="Abrir menu"
-              style={{ display: 'none' }}
-              id="layout-mobile-button"
             >
-              <Menu size={16} />
-            </button>
+              <Menu size={20} />
+            </Button>
             <div>
-              <p style={{ fontSize: '.72rem', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--color-text-muted)' }}>
+              <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] font-medium">
                 Workspace
               </p>
-              <h2 style={{ fontSize: '1.05rem', fontWeight: 700 }}>
+              <h1 className="text-lg font-bold tracking-tight text-[var(--color-text)]">
                 {pageName}
-              </h2>
+              </h1>
             </div>
           </div>
-
         </header>
 
-        <section style={{ padding: '24px clamp(14px, 3vw, 30px) 30px' }}>
-          <div className="fade-in">{children}</div>
+        {/* Page Content */}
+        <section className="flex-1 p-4 lg:p-6 xl:p-8">
+          <div className="fade-in">
+            {children}
+          </div>
         </section>
       </main>
-
-      <style>{`
-        @media (max-width: 1024px) {
-          .layout-sidebar {
-            position: fixed !important;
-            left: 0;
-            top: 0;
-            transform: translateX(-100%);
-            width: 280px !important;
-          }
-
-          .layout-sidebar.open {
-            transform: translateX(0);
-          }
-
-          .layout-mobile-overlay {
-            display: block !important;
-          }
-
-          #layout-mobile-button {
-            display: inline-flex !important;
-          }
-        }
-
-        @media (max-width: 720px) {
-          #layout-mobile-button + div h2 {
-            font-size: .95rem;
-          }
-        }
-      `}</style>
     </div>
   )
 }
